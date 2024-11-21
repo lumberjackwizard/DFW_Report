@@ -10,10 +10,11 @@ $Cred = New-Object -TypeName System.Management.Automation.PSCredential -Argument
 #$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 #$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
-# Uri will get only securitypolices, groups, context profiles and services under infra
+# Uri will get only securitypolices, groups, and context profiles under infra
+# SvcUri will get only services under infra
 
-
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;Service;'
+$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
+$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
 
 
 #This is formatting data for the later creation of the html file 
@@ -82,7 +83,9 @@ $html_policy = " "
 Write-Host "Requesting data from target NSX Manager..."
 
 $rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 
+################################################
 # inserting logic so i can see how many lines are in the base $rawpolicy
 
 # Convert $rawpolicy to JSON string
@@ -92,7 +95,7 @@ $rawPolicyJson = $rawpolicy | ConvertTo-Json -Depth 10
 $lineCount = ($rawPolicyJson -split "`n").Count
 
 Write-Host "Number of lines in the JSON string: $lineCount"
-
+####################################################
 
 # Gathering security policies
 
@@ -111,7 +114,7 @@ $allgroups = $rawpolicy.children.Domain.children.Group | Where-object {$_.id}
 
 Write-Host "Gathering Serivces..."
 
-$allservices = $rawpolicy.children.Service | Where-object {$_.id}
+$allservices = $rawservices.children.Service | Where-object {$_.id}
 
 
 # Gathering Context Profiles
@@ -120,8 +123,12 @@ Write-Host "Gathering Context Profiles..."
 
 $allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
 
+
+###############Potential Future##################
 # Gathering Tags
 $alltags = $rawpolicy.children.Tags | Where-Object {$_.id}
+
+##################################################
 
 
 
@@ -163,12 +170,9 @@ function Generate_Breakdown_Report {
 function Generate_Policy_Report {
 
 	
-	#NEW ATTEMPT#
-
-	
-
 	# Loop through the data to create rows with conditional formatting
 	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}) {
+		write-host $secpolicy
     # Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 	
     	$rowStyle = ''
@@ -289,7 +293,7 @@ function Generate_Policy_Report {
 # 			}
 				
 			$rowCount++
-			#Write-Host $rowCount
+			
 				
 
 			# Add the row to the HTML
