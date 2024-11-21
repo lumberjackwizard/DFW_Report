@@ -130,9 +130,32 @@ $alltags = $rawpolicy.children.Tags | Where-Object {$_.id}
 
 ##################################################
 
+function Get-StartDate {
+	# While loop runs until a date is succesfully entered in the proper format
+	while ($true) {
+		# Prompt user for a calendar date
+		$dateInput = Read-Host "Enter a calendar date in YYYY-MM-DD format (ex., 2024-11-18)"
 
+		if ($dateInput -match '^\d{4}-\d{2}-\d{2}$') {
+			try {
+				# Parse the entered date into a DateTime object
+				$parsedDate = [DateTime]::Parse($dateInput)
 
+				# Get the epoch timestamp in milliseconds
+				$epochMilliseconds = [DateTimeOffset]::new($parsedDate).ToUnixTimeMilliseconds()
 
+				# Return the results
+				return $epochMilliseconds
+			}
+			catch {
+				
+				Write-Host "Invalid date: $dateInput. Please enter a valid date in YYYY-MM-DD format."
+			}
+		} else {
+			Write-Host "Invalid format. Please enter a date in YYYY-MM-DD format."
+		}
+	}
+}
 function Generate_Breakdown_Report {
 	
 
@@ -422,6 +445,7 @@ function New-NSXLocalInfra {
 }
 
 
+Get-StartDate
 
 $html_policy = Generate_Policy_Report
 
