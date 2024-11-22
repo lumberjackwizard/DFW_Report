@@ -10,6 +10,24 @@ $Cred = New-Object -TypeName System.Management.Automation.PSCredential -Argument
 #$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 #$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
+function Invoke-CheckNSXCredentials(){
+	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
+
+	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
+	$response = Invoke-WebRequest -Uri $checkUri -Method Get -SkipCertificateCheck -Authentication Basic -Credential $Cred -SkipHttpErrorCheck
+	
+	if ($response.StatusCode -eq 200) {
+		Write-Host "Successfully connected to NSX Manager. Status: 200 OK"
+	} else {
+		Write-Host "Failed to connect to NSX Manager." 
+		Write-Host "Status: $($response.StatusCode)"
+		Write-Host "Error Message:" ($response.Content)
+		Write-Host "Exiting script... Please try again. "
+		exit
+	}
+
+}
+
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra
 
@@ -77,58 +95,48 @@ max-width: 300px;
 $html_policy = " "
 
 
-# The below gathers all securitypolicies, groups, and services from infra, storing it in 
-# the $rawpolicy variable 
+function Get-NSXDFW(){
 
-Write-Host "Requesting data from target NSX Manager..."
+	# The below gathers all securitypolicies, groups, and services from infra, storing it in 
+	# the $rawpolicy variable 
 
-$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
-$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+	Write-Host "Requesting data from target NSX Manager..."
 
-################################################
-# inserting logic so i can see how many lines are in the base $rawpolicy
+	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 
-# Convert $rawpolicy to JSON string
-$rawPolicyJson = $rawpolicy | ConvertTo-Json -Depth 10
+	# Gathering security policies
 
-# Split JSON string into lines and count the number of lines
-$lineCount = ($rawPolicyJson -split "`n").Count
+	Write-Host "Gathering DFW Security Policies and rules..."
 
-Write-Host "Number of lines in the JSON string: $lineCount"
-####################################################
+	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property internal_sequence_number
 
-# Gathering security policies
+	# Gathering Groups
 
-Write-Host "Gathering DFW Security Policies and rules..."
+	Write-Host "Gathering Groups..."
 
-$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property internal_sequence_number
+	$allgroups = $rawpolicy.children.Domain.children.Group | Where-object {$_.id}
 
 
+	Write-Host "Gathering Serivces..."
 
-# Gathering Groups
-
-Write-Host "Gathering Groups..."
-
-$allgroups = $rawpolicy.children.Domain.children.Group | Where-object {$_.id}
+	$allservices = $rawservices.children.Service | Where-object {$_.id}
 
 
-Write-Host "Gathering Serivces..."
+	# Gathering Context Profiles
 
-$allservices = $rawservices.children.Service | Where-object {$_.id}
+	Write-Host "Gathering Context Profiles..."
 
+	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
 
-# Gathering Context Profiles
+	return [pscustomobject]@{
+        SecPolicies =        $secpolicies
+		AllGroups   =        $allgroups
+		AllServices =        $allservices
+		AllContextProfiles = $allcontextprofiles
+    }
 
-Write-Host "Gathering Context Profiles..."
-
-$allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
-
-
-###############Potential Future##################
-# Gathering Tags
-$alltags = $rawpolicy.children.Tags | Where-Object {$_.id}
-
-##################################################
+}
 
 function Get-StartDate {
 	# While loop runs until a date is succesfully entered in the proper format
@@ -194,7 +202,7 @@ function Generate_Policy_Report {
 
 	
 	# Loop through the data to create rows with conditional formatting
-	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}) {
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}) {
 		write-host $secpolicy
     # Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 	
@@ -235,7 +243,7 @@ function Generate_Policy_Report {
 
 			foreach ($srcgroup in $rule.source_groups){
 				$n = 0
-				foreach ($filteredgroup in $allgroups){
+				foreach ($filteredgroup in $allsecgroups){
 					if ($filteredgroup.path -eq $srcgroup){
 						$ruleentrysrc += $filteredgroup.display_name + "`n"
 						$n = 1
@@ -251,7 +259,7 @@ function Generate_Policy_Report {
 			
 			foreach ($dstgroup in $rule.destination_groups){  
 				$n = 0
-				foreach ($filteredgroup in $allgroups){
+				foreach ($filteredgroup in $allsecgroups){
 					if ($filteredgroup.path -eq $dstgroup){
 						$ruleentrydst += $filteredgroup.display_name + "`n"
 						$n = 1
@@ -266,7 +274,7 @@ function Generate_Policy_Report {
 
 			foreach ($svcgroup in $rule.services){ 
 				$n = 0
-				foreach ($filsvc in $allservices){
+				foreach ($filsvc in $allsecservices){
 					if ($filsvc.path -eq $svcgroup){
 						$ruleentrysvc += $filsvc.display_name + "`n"
 						$n = 1
@@ -282,7 +290,7 @@ function Generate_Policy_Report {
 			
 			foreach ($cxtprogroup in $rule.profiles){  
 				$n = 0
-				foreach ($filctxpro in $allcontextprofiles){
+				foreach ($filctxpro in $allseccontextprofiles){
 					if ($filctxpro.path -eq $cxtprogroup){
 						$ruleentrycxtpro += $filctxpro.display_name + "`n"
 						$n = 1
@@ -444,12 +452,23 @@ function New-NSXLocalInfra {
 
 }
 
+# Main
 
-Get-StartDate
+Invoke-CheckNSXCredentials
+
+#$startDate = Get-StartDate
+
+$allpolicies = Get-NSXDFW
+
+$allsecpolicies = $allpolicies.SecPolicies
+$allsecgroups = $allpolicies.AllGroups
+$allsecservices = $allpolicies.AllServices
+$allseccontextprofiles = $allpolicies.AllContextProfiles
 
 $html_policy = Generate_Policy_Report
 
 $report_counts = Generate_Breakdown_Report
+
 New-NSXLocalInfra
 
 
