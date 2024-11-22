@@ -360,6 +360,15 @@ $html_policy = " "
 
 function Invoke-OutputReport {
 
+
+	$dateLine = if ($startDate) {
+		@"
+		<p style="text-align:center;">
+        <span style="font-size:22px;"><strong><u>All objects created after $startDate</u></strong></span>
+    	</p>
+"@
+	}
+
 	Write-Host "Generating output file..."
 
 	# Start the HTML 
@@ -376,6 +385,9 @@ function Invoke-OutputReport {
 	<p style="text-align:center;">
         <span style="font-size:22px;"><strong><u>Segmentation Report</u></strong></span>
     </p>
+
+    $dateLine
+
     <p>&nbsp;</p>
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px;">
         <tr>
