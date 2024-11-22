@@ -1,14 +1,5 @@
 #Created using PowerShell 7.4.5
 
-# Temporarily hard setting nsxmgr and credentials for development. Get-Credential will be used in the future. 
-
-$nsxmgr = '172.16.10.11'
-$nsxuser = 'admin'
-$nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
-$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
-
-#$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
-#$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
 function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
@@ -28,11 +19,6 @@ function Invoke-CheckNSXCredentials(){
 
 }
 
-# Uri will get only securitypolices, groups, and context profiles under infra
-# SvcUri will get only services under infra
-
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
 
 
 #This is formatting data for the later creation of the html file 
@@ -142,7 +128,8 @@ function Get-StartDate {
 	# While loop runs until a date is succesfully entered in the proper format
 	while ($true) {
 		# Prompt user for a calendar date
-		$dateInput = Read-Host "Enter a calendar date in YYYY-MM-DD format (ex., 2024-11-18)"
+		Write-Host "`n"
+		$dateInput = Read-Host "Enter a calendar date in YYYY-MM-DD format (ex., 2024-11-18) or just hit Enter to gather all polices"
 
 		if ($dateInput -match '^\d{4}-\d{2}-\d{2}$') {
 			try {
@@ -159,17 +146,21 @@ function Get-StartDate {
 				
 				Write-Host "Invalid date: $dateInput. Please enter a valid date in YYYY-MM-DD format."
 			}
+		} elseif ($dateInput -eq ""){
+			return $epochMilliseconds
+			Write-Host "No date entered; all Policies will be gathered"
+
 		} else {
 			Write-Host "Invalid format. Please enter a date in YYYY-MM-DD format."
 		}
 	}
 }
-function Generate_Breakdown_Report {
+function Invoke-GenerateBreakdownReport {
 	
 
 	$policy_count = 0
 	$rule_count = 0
-	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}) {
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}) {
 		$policy_count++
 		foreach ($rule in $secpolicy.children.Rule){
 			$rule_count++
@@ -177,17 +168,17 @@ function Generate_Breakdown_Report {
 	}
 
 	$svc_count = 0
-	foreach ($svc in $allservices | Where-Object {$_.is_default -eq $False}){
+	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate -le $_._create_time}){
 		$svc_count++
 	}
 
 	$cxt_pro_count = 0
-	foreach ($cxt_pro in $allcontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}){
 		$cxt_pro_count++
 	}
 
 	$group_count = 0
-	foreach ($grp in $allgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}){
 		$group_count++
 	}
 
@@ -198,7 +189,7 @@ function Generate_Breakdown_Report {
 }
 
 
-function Generate_Policy_Report {
+function Invoke-GeneratePolicyReport {
 
 	
 	# Loop through the data to create rows with conditional formatting
@@ -371,7 +362,7 @@ function Generate_Policy_Report {
 
 
 
-function New-NSXLocalInfra {
+function Invoke-OutputReport {
 
 	Write-Host "Generating output file..."
 
@@ -451,12 +442,31 @@ function New-NSXLocalInfra {
 	$html | Set-Content -Path 'output.html'  # Save to an HTML file
 
 }
-
+##########################
 # Main
+##########################
+
+# Temporarily hard setting nsxmgr and credentials for development. Get-Credential will be used in the future. 
+
+$nsxmgr = '172.16.10.11'
+$nsxuser = 'admin'
+$nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
+$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
+
+#$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
+#$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+
+# Uri will get only securitypolices, groups, and context profiles under infra
+# SvcUri will get only services under infra
+
+$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
+$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
+
+
 
 Invoke-CheckNSXCredentials
 
-#$startDate = Get-StartDate
+$startDate = Get-StartDate
 
 $allpolicies = Get-NSXDFW
 
@@ -465,11 +475,11 @@ $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
-$html_policy = Generate_Policy_Report
+$html_policy = Invoke-GeneratePolicyReport
 
-$report_counts = Generate_Breakdown_Report
+$report_counts = Invoke-GenerateBreakdownReport
 
-New-NSXLocalInfra
+Invoke-OutputReport
 
 
 

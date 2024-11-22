@@ -65,11 +65,11 @@ max-width: 300px;
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px;">
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Security Policies <i>(excluding system generated)</i>:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>0</b></td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>5</b></td>
         </tr>
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Rules <i>(excluding system generated)</i>:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>0</b></td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>8</b></td>
         </tr>
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of User Created Services:</td>
@@ -81,7 +81,7 @@ max-width: 300px;
         </tr>
         <tr>
             <td style="padding: 10px;">Number of User Created Groups:</td>
-            <td style="padding: 10px; text-align: right;"><b>0</b></td>
+            <td style="padding: 10px; text-align: right;"><b>1</b></td>
         </tr>
     </table>
 	<p>&nbsp;</p>
@@ -101,33 +101,6 @@ max-width: 300px;
 		</thead>
 		<tbody>    <tr style="background-color: #2F8A4C; ">
 			<td style='font-weight: bold;'>Infrastructure</td>
-			<td>Allow NTP</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allow NTP rule</td>
-			<td style='vertical-align: middle;'>Prod_apps
-Non-Prod Apps
-Ubuntu jump server
-Application-X_Web_Group
-wordpress_db_tier
-wordpress123
-172.16.10.12
-172.16.10.11
-172.16.10.14
-172.16.10.13
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>NTP
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #2F8A4C; ">
-			<td style='font-weight: bold;'>Infrastructure</td>
 			<td>Allow all SSH</td>
 			<td colspan=6></td>
 		</tr>
@@ -141,25 +114,6 @@ wordpress123
 			<td style='vertical-align: middle;'>SSH
 </td>
 			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #2F8A4C; ">
-			<td style='font-weight: bold;'>Infrastructure</td>
-			<td>Allow DNS</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allow DNS rule</td>
-			<td style='vertical-align: middle;'>Prod_apps
-</td>
-			<td style='vertical-align: middle;'>192.168.4.240
-</td>
-			<td style='vertical-align: middle;'>DNS-UDP
-DNS-TCP
-</td>
-			<td style='vertical-align: middle;'>DNS
 </td>
 			<td style='vertical-align: middle;'>ALLOW</td>
 			</tr>
@@ -212,97 +166,6 @@ HTTPS
 </td>
 			<td style='vertical-align: middle;'>ACTIVDIR
 AMQP
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>testapp-recommendaton</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-1 (testapp-recommendaton)</td>
-			<td style='vertical-align: middle;'>test app - app tier
-</td>
-			<td style='vertical-align: middle;'>test app - db tier
-</td>
-			<td style='vertical-align: middle;'>MySQL
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-2 (testapp-recommendaton)</td>
-			<td style='vertical-align: middle;'>test app - web tier
-</td>
-			<td style='vertical-align: middle;'>test app - app tier
-</td>
-			<td style='vertical-align: middle;'>DNS-TCP
-HTTP
-Oracle XMLDB HTTP port
-Service-TCP-8181
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>Policy-1 (wordpress)</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-1 (wordpress)</td>
-			<td style='vertical-align: middle;'>wordpress123
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>HTTPS
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-2 (wordpress)</td>
-			<td style='vertical-align: middle;'>wordpress_web_tier
-</td>
-			<td style='vertical-align: middle;'>wordpress_db_tier
-</td>
-			<td style='vertical-align: middle;'>MySQL
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-3 (wordpress)</td>
-			<td style='vertical-align: middle;'>Ubuntu jump server
-</td>
-			<td style='vertical-align: middle;'>wordpress_web_tier
-</td>
-			<td style='vertical-align: middle;'>Oracle XMLDB HTTP port
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-4 (wordpress)</td>
-			<td style='vertical-align: middle;'>wordpress_web_tier
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>HTTP
-</td>
-			<td style='vertical-align: middle;'>ANY
 </td>
 			<td style='vertical-align: middle;'>ALLOW</td>
 			</tr>
@@ -368,93 +231,6 @@ HTTPS
 			<td style='vertical-align: middle;'>ANY
 </td>
 			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>Application-X</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Inbound to Web Group</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>HTTP
-HTTPS
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allowed Web to App</td>
-			<td style='vertical-align: middle;'>Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>Application-X.App_Group
-</td>
-			<td style='vertical-align: middle;'>RDP
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allowed App to DB</td>
-			<td style='vertical-align: middle;'>Application-X.App_Group
-</td>
-			<td style='vertical-align: middle;'>Application-X.DB_Group
-</td>
-			<td style='vertical-align: middle;'>MSSQL Server Database Engine
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Deny All From Application-X Web to other tiers</td>
-			<td style='vertical-align: middle;'>Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>Application-X.App_Group
-Application-X.DB_Group
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>DROP</td>
-			</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Deny All From Application-X App to other tiers</td>
-			<td style='vertical-align: middle;'>Application-X.App_Group
-</td>
-			<td style='vertical-align: middle;'>Application-X.DB_Group
-Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>DROP</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Copy of Deny All From Application-X DB to other tiers</td>
-			<td style='vertical-align: middle;'>Application-X.DB_Group
-</td>
-			<td style='vertical-align: middle;'>Application-X.App_Group
-Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>DROP</td>
 			</tr>
 		</tbody>
 		<tfoot>
