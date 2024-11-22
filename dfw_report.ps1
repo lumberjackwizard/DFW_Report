@@ -19,68 +19,6 @@ function Invoke-CheckNSXCredentials(){
 
 }
 
-
-
-#This is formatting data for the later creation of the html file 
-
-$header = @"
-<style>
-table {
-font-size: 14px;
-border-collapse: collapse;
-width: 100%; 
-font-family: Arial, Helvetica, sans-serif;
-} 
-
-    td {
-padding: 4px;
-margin: 0;
-border: 1px solid #4d4d4d;
-word-wrap: break-word;
-overflow-wrap: break-word;
-white-space: pre-wrap;
-max-width: 300px;
-}
-
-    th {
-        background: #395870;
-        background: linear-gradient(#49708f, #293f50);
-        color: #fff;
-        font-size: 11px;
-        text-transform: uppercase;
-        padding: 10px 15px;
-        vertical-align: middle;
-		border: 1px solid #4d4d4d;
-}
-
-
-	td:nth-child(1), th:nth-child(1),
-	td:nth-child(2), th:nth-child(2) {
-    font-weight: bold;                   /* Makes text bold for the first two columns */
-	}
-
-        #CreationDate {
-
-        font-family: Arial, Helvetica, sans-serif;
-        color: #ff3300;
-        font-size: 12px;
-
-    }
-
-.logo {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 200px; /* Adjust size as needed */
-            height: auto;
-        }
-    
-</style>
-"@
-
-$html_policy = " "
-
-
 function Get-NSXDFW(){
 
 	# The below gathers all securitypolicies, groups, and services from infra, storing it in 
@@ -360,6 +298,64 @@ function Invoke-GeneratePolicyReport {
 }
 
 
+#This is formatting data for the later creation of the html file 
+
+$header = @"
+<style>
+table {
+font-size: 14px;
+border-collapse: collapse;
+width: 100%; 
+font-family: Arial, Helvetica, sans-serif;
+} 
+
+    td {
+padding: 4px;
+margin: 0;
+border: 1px solid #4d4d4d;
+word-wrap: break-word;
+overflow-wrap: break-word;
+white-space: pre-wrap;
+max-width: 300px;
+}
+
+    th {
+        background: #395870;
+        background: linear-gradient(#49708f, #293f50);
+        color: #fff;
+        font-size: 11px;
+        text-transform: uppercase;
+        padding: 10px 15px;
+        vertical-align: middle;
+		border: 1px solid #4d4d4d;
+}
+
+
+	td:nth-child(1), th:nth-child(1),
+	td:nth-child(2), th:nth-child(2) {
+    font-weight: bold;                   /* Makes text bold for the first two columns */
+	}
+
+        #CreationDate {
+
+        font-family: Arial, Helvetica, sans-serif;
+        color: #ff3300;
+        font-size: 12px;
+
+    }
+
+.logo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px; /* Adjust size as needed */
+            height: auto;
+        }
+    
+</style>
+"@
+
+$html_policy = " "
 
 
 function Invoke-OutputReport {
