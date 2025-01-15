@@ -456,13 +456,13 @@ function Invoke-OutputReport {
 
 # Temporarily hard setting nsxmgr and credentials for development. Get-Credential will be used in the future. 
 
-$nsxmgr = '172.16.10.11'
-$nsxuser = 'admin'
-$nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
-$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
+# $nsxmgr = '172.16.10.11'
+# $nsxuser = 'admin'
+# $nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
+# $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
 
-#$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
-#$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
+$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra

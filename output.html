@@ -62,19 +62,17 @@ max-width: 300px;
         <span style="font-size:22px;"><strong><u>Segmentation Report</u></strong></span>
     </p>
 
-    		<p style="text-align:center;">
-        <span style="font-size:22px;"><strong><u>All objects created after 1730437200000</u></strong></span>
-    	</p>
+    
 
     <p>&nbsp;</p>
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px;">
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Security Policies <i>(excluding system generated)</i>:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>5</b></td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>0</b></td>
         </tr>
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Rules <i>(excluding system generated)</i>:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>8</b></td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>0</b></td>
         </tr>
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of User Created Services:</td>
@@ -82,11 +80,11 @@ max-width: 300px;
         </tr>
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of User Created Context Profiles:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>0</b></td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>1</b></td>
         </tr>
         <tr>
             <td style="padding: 10px;">Number of User Created Groups:</td>
-            <td style="padding: 10px; text-align: right;"><b>1</b></td>
+            <td style="padding: 10px; text-align: right;"><b>3</b></td>
         </tr>
     </table>
 	<p>&nbsp;</p>
@@ -104,140 +102,7 @@ max-width: 300px;
 				<th>Action</th>
 			</tr>
 		</thead>
-		<tbody>    <tr style="background-color: #2F8A4C; ">
-			<td style='font-weight: bold;'>Infrastructure</td>
-			<td>Allow all SSH</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allow SSH rule</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>Prod_apps
-</td>
-			<td style='vertical-align: middle;'>SSH
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #4682B4; ">
-			<td style='font-weight: bold;'>Environment</td>
-			<td>Prod and Non-Prod Separation</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Allowed protocols from Prod to NonProd</td>
-			<td style='vertical-align: middle;'>Prod_apps
-</td>
-			<td style='vertical-align: middle;'>Non-Prod Apps
-</td>
-			<td style='vertical-align: middle;'>SSH
-HTTP
-HTTPS
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Deny Prod to Non-Prod</td>
-			<td style='vertical-align: middle;'>Prod_apps
-</td>
-			<td style='vertical-align: middle;'>Non-Prod Apps
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>DROP</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>Michael test - created 4:39PM 11/19/20204</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Michael test rule</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ACTIVDIR
-AMQP
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>test policy</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>External to web</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>test app - web tier
-</td>
-			<td style='vertical-align: middle;'>SSH
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Web to App</td>
-			<td style='vertical-align: middle;'>test app - web tier
-</td>
-			<td style='vertical-align: middle;'>test app - app tier
-</td>
-			<td style='vertical-align: middle;'>HTTPS
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #995CD5; ">
-			<td style='font-weight: bold;'>Application</td>
-			<td>Policy-1 (Web Group)</td>
-			<td colspan=6></td>
-		</tr>
-    <tr style="background-color: #B0C4DE;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-1 (Web Group)</td>
-			<td style='vertical-align: middle;'>Ubuntu jump server
-</td>
-			<td style='vertical-align: middle;'>Application-X_Web_Group
-</td>
-			<td style='vertical-align: middle;'>HTTP
-HTTPS
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-    <tr style="background-color: #949BAF;">
-			<td style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td>
-			<td style='vertical-align: middle;'>Rule-2 (Web Group)</td>
-			<td style='vertical-align: middle;'>Ubuntu jump server
-</td>
-			<td style='vertical-align: middle;'>Group-1 (Web Group)
-</td>
-			<td style='vertical-align: middle;'>SSH
-</td>
-			<td style='vertical-align: middle;'>ANY
-</td>
-			<td style='vertical-align: middle;'>ALLOW</td>
-			</tr>
-		</tbody>
+		<tbody> 		</tbody>
 		<tfoot>
 			<tr style="border-top: 2px solid black;"></tr>
 		</tfoot>
