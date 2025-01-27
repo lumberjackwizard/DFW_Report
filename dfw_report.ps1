@@ -1,5 +1,10 @@
 #Created using PowerShell 7.4.5
 
+param (
+    [switch]$TestMode
+)
+
+
 
 function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
@@ -454,15 +459,21 @@ function Invoke-OutputReport {
 # Main
 ##########################
 
-# Temporarily hard setting nsxmgr and credentials for development. Get-Credential will be used in the future. 
+# If "-TestMode" is appended as a command switch to the script, the nsx server, username, and password are pulled
+# from a local 'testdata.csv' file. This allows for running the script with automated credentials during testing. 
 
-# $nsxmgr = '172.16.10.11'
-# $nsxuser = 'admin'
-# $nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
-# $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
+
+if ($TestMode) {
+    $Config = Import-Csv "testdata.csv"
+	$nsxmgr = $Config.nsxmgr
+    $nsxuser = $Config.Username
+    $nsxpasswd = ConvertTo-SecureString -String $Config.Password -AsPlainText -Force
+	$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
+} else {
 
 $nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+}
 
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra
