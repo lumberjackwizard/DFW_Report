@@ -137,7 +137,7 @@ function Invoke-GeneratePolicyReport {
 	
 	# Loop through the data to create rows with conditional formatting
 	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}) {
-		write-host $secpolicy
+		
     # Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 	
     	$rowStyle = ''
@@ -153,7 +153,7 @@ function Invoke-GeneratePolicyReport {
 		$html_policy += "    <tr$rowStyle>
 			<td style='font-weight: bold;'>$($secpolicy.category)</td>
 			<td>$($secpolicy.display_name)</td>
-			<td colspan=6></td>
+			<td colspan=7></td>
 		</tr>`n"
 
 		
@@ -162,9 +162,12 @@ function Invoke-GeneratePolicyReport {
 
 		
 		$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
+
+		
 	
 		$rowCount = 0
 		foreach ($rule in $sortrules | Where-object {$_.id}){
+			
 			
 			
 			$ruleentryname = $rule.display_name
@@ -174,6 +177,7 @@ function Invoke-GeneratePolicyReport {
 			$ruleentrydst = ""
 			$ruleentrysvc = ""
 			$ruleentrycxtpro = ""
+			$ruleentryappliedto = ""
 
 			foreach ($srcgroup in $rule.source_groups){
 				$n = 0
@@ -237,6 +241,21 @@ function Invoke-GeneratePolicyReport {
 				}
 			}
 
+			foreach ($appliedtogroup in $rule.scope){
+				$n = 0
+				foreach ($filteredgroup in $allsecgroups){
+					if ($filteredgroup.path -eq $appliedtogroup){
+						$ruleentryappliedto += $filteredgroup.display_name + "`n"
+						$n = 1
+						break
+					}
+					
+				}
+				if ($n -eq "0") {
+					$ruleentryappliedto += $appliedtogroup + "`n"
+					}	
+			}
+
 # The below code works, but still evaluating if there's a benefit to re-inserting the headers after 'x' 
 # number of rows. Right now, this evaulation happens within each policy, so it's rows (aka rules) in the 
 # policy, and not overall rows. 
@@ -288,6 +307,7 @@ function Invoke-GeneratePolicyReport {
 			<td style='vertical-align: middle;'>$($ruleentrydst)</td>
 			<td style='vertical-align: middle;'>$($ruleentrysvc)</td>
 			<td style='vertical-align: middle;'>$($ruleentrycxtpro)</td>
+			<td style='vertical-align: middle;'>$($ruleentryappliedto)</td>
 			<td style='vertical-align: middle;'>$($ruleentryaction)</td>
 			</tr>`n"
 			
@@ -428,6 +448,7 @@ function Invoke-OutputReport {
 				<th>Destination Groups</th>
 				<th>Services</th>
 				<th>Context Profiles</th>
+				<th>Applied To</th>
 				<th>Action</th>
 			</tr>
 		</thead>
@@ -438,7 +459,7 @@ function Invoke-OutputReport {
 		$html += $html_policy
 
 
-		#close the security policies  table
+		#close the security policies table
 		$html += @"
 		</tbody>
 		<tfoot>
@@ -489,10 +510,14 @@ $startDate = Get-StartDate
 
 $allpolicies = Get-NSXDFW
 
+
+
 $allsecpolicies = $allpolicies.SecPolicies
 $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
+
+
 
 $html_policy = Invoke-GeneratePolicyReport
 
