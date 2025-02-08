@@ -93,7 +93,10 @@ function Get-StartDate {
 				Write-Host "Invalid date: $dateInput. Please enter a valid date in YYYY-MM-DD format."
 			}
 		} elseif ($dateInput -eq ""){
-			return $epochMilliseconds
+
+			$dates = @($dateInput,$epochMilliseconds)
+			return $dates
+			#return $epochMilliseconds
 			Write-Host "No date entered; all Policies will be gathered"
 
 		} else {
