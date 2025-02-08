@@ -334,7 +334,7 @@ function Invoke-GeneratePolicyReport {
 function Invoke-OutputReport {
 
 
-	$dateLine = if ($startDate) {
+	$dateLine = if ($startDate[1]) {
 
 		@"
 		<p style="text-align:center;">
