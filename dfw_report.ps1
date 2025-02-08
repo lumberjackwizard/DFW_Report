@@ -4,8 +4,6 @@ param (
     [switch]$TestMode
 )
 
-#this is a cleanup branch test
-
 function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
 
@@ -258,31 +256,9 @@ function Invoke-GeneratePolicyReport {
 					$ruleentryappliedto += $appliedtogroup + "`n"
 					}	
 			}
-
-# The below code works, but still evaluating if there's a benefit to re-inserting the headers after 'x' 
-# number of rows. Right now, this evaulation happens within each policy, so it's rows (aka rules) in the 
-# policy, and not overall rows. 
-
-# 			if ($rowCount -gt 0 -and $rowCount % 20 -eq 0) {
-# 				# Insert the header again after every 20 rows
-# 				$html_policy += @"
-# 				<tr>
-# 					<th>Category</th>
-# 					<th>Security Policy Name</th>
-# 					<th>Rule Name</th>
-# 					<th>Source Groups</th>
-# 					<th>Destination Groups</th>
-# 					<th>Services</th>
-# 					<th>Context Profiles</th>
-# 					<th>Action</th>
-# 				</tr>
-# "@
-# 			}
 				
 			$rowCount++
 			
-				
-
 			# Add the row to the HTML
 			if ($rowCount % 2) {
 				$rowStyle2 = ' style="background-color: #B0C4DE;"'
@@ -328,62 +304,6 @@ function Invoke-GeneratePolicyReport {
 
 #This is formatting data for the later creation of the html file 
 
-$header = @"
-<style>
-table {
-font-size: 14px;
-border-collapse: collapse;
-width: 100%; 
-font-family: Arial, Helvetica, sans-serif;
-} 
-
-    td {
-padding: 4px;
-margin: 0;
-border: 1px solid #4d4d4d;
-word-wrap: break-word;
-overflow-wrap: break-word;
-white-space: pre-wrap;
-max-width: 300px;
-}
-
-    th {
-        background: #395870;
-        background: linear-gradient(#49708f, #293f50);
-        color: #fff;
-        font-size: 11px;
-        text-transform: uppercase;
-        padding: 10px 15px;
-        vertical-align: middle;
-		border: 1px solid #4d4d4d;
-}
-
-
-	td:nth-child(1), th:nth-child(1),
-	td:nth-child(2), th:nth-child(2) {
-    font-weight: bold;                   /* Makes text bold for the first two columns */
-	}
-
-        #CreationDate {
-
-        font-family: Arial, Helvetica, sans-serif;
-        color: #ff3300;
-        font-size: 12px;
-
-    }
-
-.logo {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 200px; /* Adjust size as needed */
-            height: auto;
-        }
-    
-</style>
-"@
-
-$html_policy = " "
 
 
 function Invoke-OutputReport {
@@ -480,6 +400,8 @@ function Invoke-OutputReport {
 	$html | Set-Content -Path 'output.html'  # Save to an HTML file
 
 }
+
+
 ##########################
 # Main
 ##########################
@@ -520,6 +442,64 @@ $allsecpolicies = $allpolicies.SecPolicies
 $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
+
+
+$header = @"
+<style>
+table {
+font-size: 14px;
+border-collapse: collapse;
+width: 100%; 
+font-family: Arial, Helvetica, sans-serif;
+} 
+
+    td {
+padding: 4px;
+margin: 0;
+border: 1px solid #4d4d4d;
+word-wrap: break-word;
+overflow-wrap: break-word;
+white-space: pre-wrap;
+max-width: 300px;
+}
+
+    th {
+        background: #395870;
+        background: linear-gradient(#49708f, #293f50);
+        color: #fff;
+        font-size: 11px;
+        text-transform: uppercase;
+        padding: 10px 15px;
+        vertical-align: middle;
+		border: 1px solid #4d4d4d;
+}
+
+
+	td:nth-child(1), th:nth-child(1),
+	td:nth-child(2), th:nth-child(2) {
+    font-weight: bold;                   /* Makes text bold for the first two columns */
+	}
+
+        #CreationDate {
+
+        font-family: Arial, Helvetica, sans-serif;
+        color: #ff3300;
+        font-size: 12px;
+
+    }
+
+.logo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px; /* Adjust size as needed */
+            height: auto;
+        }
+    
+</style>
+"@
+
+$html_policy = " "
 
 
 
