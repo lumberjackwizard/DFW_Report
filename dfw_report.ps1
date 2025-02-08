@@ -4,7 +4,7 @@ param (
     [switch]$TestMode
 )
 
-
+#this is a cleanup branch test
 
 function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
