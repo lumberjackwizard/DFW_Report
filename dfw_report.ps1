@@ -83,7 +83,10 @@ function Get-StartDate {
 				$epochMilliseconds = [DateTimeOffset]::new($parsedDate).ToUnixTimeMilliseconds()
 
 				# Return the results
-				return $epochMilliseconds
+
+				$dates = @($dateInput,$epochMilliseconds)
+				#return $epochMilliseconds
+				return $dates
 			}
 			catch {
 				
@@ -103,7 +106,7 @@ function Invoke-GenerateBreakdownReport {
 
 	$policy_count = 0
 	$rule_count = 0
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}) {
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._tes_owned -eq $False -And $startDate[1] -le $_._create_time}) {
 		$policy_count++
 		foreach ($rule in $secpolicy.children.Rule){
 			$rule_count++
@@ -111,17 +114,17 @@ function Invoke-GenerateBreakdownReport {
 	}
 
 	$svc_count = 0
-	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate -le $_._create_time}){
+	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate[1] -le $_._create_time}){
 		$svc_count++
 	}
 
 	$cxt_pro_count = 0
-	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}){
+	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
 		$cxt_pro_count++
 	}
 
 	$group_count = 0
-	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}){
+	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
 		$group_count++
 	}
 
@@ -136,7 +139,7 @@ function Invoke-GeneratePolicyReport {
 
 	
 	# Loop through the data to create rows with conditional formatting
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate -le $_._create_time}) {
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
 		
     # Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 	
@@ -387,9 +390,12 @@ function Invoke-OutputReport {
 
 
 	$dateLine = if ($startDate) {
+
+		#$friendlyDate = (Get-Date -UnixTimeSeconds $startDate).ToString("yyyy-MM-dd")
+
 		@"
 		<p style="text-align:center;">
-        <span style="font-size:22px;"><strong><u>All objects created after $startDate</u></strong></span>
+        <span style="font-size:22px;"><strong><u>All objects created after $($startDate[0])</u></strong></span>
     	</p>
 "@
 	}
