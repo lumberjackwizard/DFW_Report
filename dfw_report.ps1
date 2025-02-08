@@ -261,31 +261,9 @@ function Invoke-GeneratePolicyReport {
 					$ruleentryappliedto += $appliedtogroup + "`n"
 					}	
 			}
-
-# The below code works, but still evaluating if there's a benefit to re-inserting the headers after 'x' 
-# number of rows. Right now, this evaulation happens within each policy, so it's rows (aka rules) in the 
-# policy, and not overall rows. 
-
-# 			if ($rowCount -gt 0 -and $rowCount % 20 -eq 0) {
-# 				# Insert the header again after every 20 rows
-# 				$html_policy += @"
-# 				<tr>
-# 					<th>Category</th>
-# 					<th>Security Policy Name</th>
-# 					<th>Rule Name</th>
-# 					<th>Source Groups</th>
-# 					<th>Destination Groups</th>
-# 					<th>Services</th>
-# 					<th>Context Profiles</th>
-# 					<th>Action</th>
-# 				</tr>
-# "@
-# 			}
 				
 			$rowCount++
-			
-				
-
+						
 			# Add the row to the HTML
 			if ($rowCount % 2) {
 				$rowStyle2 = ' style="background-color: #B0C4DE;"'
@@ -327,9 +305,6 @@ function Invoke-GeneratePolicyReport {
    
 	return $html_policy
 }
-
-
-
 
 function Invoke-OutputReport {
 
@@ -534,6 +509,8 @@ $html_policy = Invoke-GeneratePolicyReport
 
 $report_counts = Invoke-GenerateBreakdownReport
 
+
+#final function to create output file
 Invoke-OutputReport
 
 
