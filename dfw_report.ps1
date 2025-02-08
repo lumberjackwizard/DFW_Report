@@ -391,8 +391,6 @@ function Invoke-OutputReport {
 
 	$dateLine = if ($startDate) {
 
-		#$friendlyDate = (Get-Date -UnixTimeSeconds $startDate).ToString("yyyy-MM-dd")
-
 		@"
 		<p style="text-align:center;">
         <span style="font-size:22px;"><strong><u>All objects created after $($startDate[0])</u></strong></span>
