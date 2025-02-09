@@ -369,60 +369,77 @@ function Invoke-OutputReport {
 
     <br>
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px; border: 2px solid #000;">
-		<tr>
-            <td style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Security Policies</td>
-		</tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Distributed Firewall Security Policies:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;text-align: right;"><b>$($report_counts[0])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Security Policies:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[5])</b></td>
-        </tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Environment Category Security Policies:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[6])</b></td>
-        </tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Application Category Security Policies:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[7])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Distributed Firewall Rules</td>
-		</tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Distributed Firewall Rules:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[1])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Distributed Firewall Rules:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[8])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Environment Category Distributed Firewall Rules:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[9])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Application Category Distributed Firewall Rules:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[10])</b></td>
-        </tr>
-		<tr>
-            <td style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Associated Distributed Firewall Objects</td>
-		</tr>
-		<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Services:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[2])</b></td>
-        </tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Context Profiles:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[3])</b></td>
-        </tr>
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Groups:</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[4])</b></td>
-        </tr>
-		
+		<thead>
+			<tr>
+				<th style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Security Policies - Summary</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Distributed Firewall Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;text-align: right;"><b>$($report_counts[0])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[5])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Environment Category Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[6])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Application Category Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[7])</b></td>
+			</tr>
+		</tbody>
+	</table>	
+	<br>
+	<table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px; border: 2px solid #000;">
+		<thead>
+			<tr>
+				<th style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Distributed Firewall Rules - Summary</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[1])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[8])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Environment Category Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[9])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Application Category Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[10])</b></td>
+			</tr>
+		</tbody>
+	</table>
+	<br>
+	<table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px; border: 2px solid #000;">
+		<thead>
+			<tr>
+				<th style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Associated Distributed Firewall Objects - Summary</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Services:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[2])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Context Profiles:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[3])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Groups:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[4])</b></td>
+			</tr>
+		</tbody>
     </table>
 	<p>&nbsp;</p>
 
