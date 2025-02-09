@@ -362,9 +362,13 @@ function Invoke-OutputReport {
     </table>
 	<p>&nbsp;</p>
 
+	<!-- testing out removing this header
+	<p style="text-align:center;"><span style="font-size:18px;"><strong><u>Security Policies and associated rules (excluding system generated)&nbsp;</u></strong></span></p>
+	-->
+
 
 	<p>&nbsp;</p>
-	<table style="width: 10%; margin: 0 auto; border-collapse: collapse; font-size: 12px;">
+	<table style="width: 10%; border-collapse: collapse; font-size: 12px;">
 		<thead>
 			<tr>
 				<th style="padding: 10px; border-bottom: 1px solid #ccc; background-color: #333; color: white;" colspan="2">Legend</th>
@@ -389,7 +393,7 @@ function Invoke-OutputReport {
 
 
 
-	<p style="text-align:center;"><span style="font-size:18px;"><strong><u>Security Policies and associated rules (excluding system generated)&nbsp;</u></strong></span></p>
+	
 	<table>
 		<thead>
 			<tr>
