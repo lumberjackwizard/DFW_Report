@@ -361,6 +361,34 @@ function Invoke-OutputReport {
         </tr>
     </table>
 	<p>&nbsp;</p>
+
+
+	<p>&nbsp;</p>
+	<table style="width: 10%; margin: 0 auto; border-collapse: collapse; font-size: 12px;">
+		<thead>
+			<tr>
+				<th style="padding: 10px; border-bottom: 1px solid #ccc; background-color: #333; color: white;" colspan="2">Legend</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Infrastructure</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #2F8A4C; width: 40px;">&nbsp;</td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Environment</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #4682B4; width: 40px;">&nbsp;</td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Application</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #995CD5; width: 40px;">&nbsp;</td>
+			</tr>
+		</tbody>
+	</table>
+	<p>&nbsp;</p>
+
+
+
 	<p style="text-align:center;"><span style="font-size:18px;"><strong><u>Security Policies and associated rules (excluding system generated)&nbsp;</u></strong></span></p>
 	<table>
 		<thead>
