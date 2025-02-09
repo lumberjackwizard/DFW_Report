@@ -106,11 +106,20 @@ function Get-StartDate {
 }
 function Invoke-GenerateBreakdownReport {
 	
-
+	$infra_category = 0
+	$env_category = 0
+	$app_category = 0
 	$policy_count = 0
 	$rule_count = 0
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._tes_owned -eq $False -And $startDate[1] -le $_._create_time}) {
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
 		$policy_count++
+		if ($secpolicy.category -eq "Infrastructure") {
+        	$infra_category++
+    	} elseif ($secpolicy.category -eq "Environment") {
+			$env_category++
+		} elseif ($secpolicy.category -eq "Application") {
+			$app_category++
+		}
 		foreach ($rule in $secpolicy.children.Rule){
 			$rule_count++
 		}
@@ -131,12 +140,11 @@ function Invoke-GenerateBreakdownReport {
 		$group_count++
 	}
 
-	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count)
+	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category)
 
 
 	return $report_counts
 }
-
 
 function Invoke-GeneratePolicyReport {
 
@@ -313,7 +321,7 @@ function Invoke-OutputReport {
 
 		@"
 		<p style="text-align:center;">
-        <span style="font-size:22px;"><strong><u>All objects created after $($startDate[0])</u></strong></span>
+        <span style="font-size:22px;"><strong><u>Security Policies and Rules created after $($startDate[0])</u></strong></span>
     	</p>
 "@
 	}
@@ -339,12 +347,30 @@ function Invoke-OutputReport {
 
     <p>&nbsp;</p>
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px;">
+		<tr>
+            <td style="padding: 12px; border-bottom: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Security Policy Breakdown</td>
+		</tr>
         <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Security Policies <i>(excluding system generated)</i>:</td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Total number of Distributed Firewall Security Policies <i>(excluding system generated policies such as Default Policy)</i>:</td>
             <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>$($report_counts[0])</b></td>
         </tr>
+		<tr>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Total number of Infrastructure Category Security Policies:</td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>$($report_counts[5])</b></td>
+        </tr>
         <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Number of Distributed Firewall Rules <i>(excluding system generated)</i>:</td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Total number of Environment Category Security Policies:</td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>$($report_counts[6])</b></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Total number of Application Category Security Policies:</td>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;text-align: right;"><b>$($report_counts[7])</b></td>
+        </tr>
+		<tr>
+            <td style="padding: 12px; border-bottom: 3px solid #000; border-top: 3px solid #000; background-color: #A9A9A9; text-align: center; font-weight: bold; font-size: 14px;" colspan="2">Distributed Firewall Rule Breakdown</td>
+		</tr>
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #ccc;">Total number of Distributed Firewall Rules <i>(excluding system generated)</i>:</td>
             <td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: right;"><b>$($report_counts[1])</b></td>
         </tr>
         <tr>
@@ -359,6 +385,7 @@ function Invoke-OutputReport {
             <td style="padding: 10px;">Number of User Created Groups:</td>
             <td style="padding: 10px; text-align: right;"><b>$($report_counts[4])</b></td>
         </tr>
+		
     </table>
 	<p>&nbsp;</p>
 
@@ -389,8 +416,8 @@ function Invoke-OutputReport {
 			</tr>
 		</tbody>
 	</table>
-	<p>&nbsp;</p>
-
+	
+	<br>
 
 
 	
