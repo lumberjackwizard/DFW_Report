@@ -106,11 +106,15 @@ function Get-StartDate {
 }
 function Invoke-GenerateBreakdownReport {
 	
+	$eth_category = 0
+	$emer_category = 0
 	$infra_category = 0
 	$env_category = 0
 	$app_category = 0
 	$policy_count = 0
 	$rule_count = 0
+	$eth_rule_count = 0
+	$emer_rule_count = 0
 	$infra_rule_count = 0
 	$env_rule_count = 0
 	$app_rule_count = 0
@@ -131,6 +135,16 @@ function Invoke-GenerateBreakdownReport {
 			$app_category++
 			foreach ($rule in $secpolicy.children.Rule){
 				$app_rule_count++
+			}
+		} elseif ($secpolicy.category -eq "Ethernet") {
+			$eth_category++
+			foreach ($rule in $secpolicy.children.Rule){
+				$eth_rule_count++
+			}
+		} elseif ($secpolicy.category -eq "Emergency") {
+			$emer_category++
+			foreach ($rule in $secpolicy.children.Rule){
+				$emer_rule_count++
 			}
 		}
 		foreach ($rule in $secpolicy.children.Rule){
@@ -153,7 +167,7 @@ function Invoke-GenerateBreakdownReport {
 		$group_count++
 	}
 
-	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category,$infra_rule_count,$env_rule_count,$app_rule_count)
+	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category,$infra_rule_count,$env_rule_count,$app_rule_count,$eth_category,$emer_category,$eth_rule_count,$emer_rule_count)
 
 
 	return $report_counts
@@ -380,6 +394,14 @@ function Invoke-OutputReport {
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;text-align: right;"><b>$($report_counts[0])</b></td>
 			</tr>
 			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Ethernet Category Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[11])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Emergency Category Security Policies:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[12])</b></td>
+			</tr>
+			<tr>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Security Policies:</td>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[5])</b></td>
 			</tr>
@@ -404,6 +426,14 @@ function Invoke-OutputReport {
 			<tr>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Distributed Firewall Rules:</td>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[1])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Ethernet Category Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[13])</b></td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Emergency Category Distributed Firewall Rules:</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc; text-align: right;"><b>$($report_counts[14])</b></td>
 			</tr>
 			<tr>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; border-top: 1px solid #ccc;">Total Number of User Created Infrastructure Category Distributed Firewall Rules:</td>
