@@ -194,11 +194,18 @@ function Invoke-GeneratePolicyReport {
 			$rowStyle = ' style="background-color: #C74C4C; "' 
 		}
     
-    # Add the row to the HTML
+		#logic to add applied to notation to applicable policy
+		$policy_Applied_To = $null
+
+		if ($secpolicy.scope -ne "ANY"){
+			$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
+		}
+	
+		# Add the row to the HTML
 		$html_policy += "    <tr$rowStyle>
 			<td style='font-weight: bold;'>$($secpolicy.category)</td>
 			<td>$($secpolicy.display_name)</td>
-			<td colspan=7></td>
+			<td colspan=7>$($policy_Applied_To)</td>
 		</tr>`n"
 
 		
@@ -238,11 +245,15 @@ function Invoke-GeneratePolicyReport {
 				$ruleentrycxtpro = ""
 			}
 
-			$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
-			if (-not $ruleentryappliedto) {
-				$ruleentryappliedto = "DFW"
+			
+			if ($secpolicy.scope -ne "ANY"){
+				$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $secpolicy.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
+			} else {
+				$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
+				if (-not $ruleentryappliedto) {
+					$ruleentryappliedto = "DFW"
+				}
 			}
-
 
 			<# foreach ($srcgroup in $rule.source_groups){
 				$n = 0
@@ -378,15 +389,17 @@ function Invoke-OutputReport {
 	$dateLine = if ($startDate[1]) {
 
 		@"
-		<p style="text-align:center;">
-        <span style="font-size:18px;"><strong><u>vDefend Distributed Firewall - User Created Security Policy - Summaries $($startDate[0])</u></strong></span>
+		<p>
+        This report was generated using <b>Targeted Mode</b> with a start date of <b>$($startDate[0])<\b>.
+		Security Polices and associated objects created on or after this date will be included. 
     	</p>
 "@
 	} else {
 
 		@"
-		<p style="text-align:center;">
-        <span style="font-size:18px;"><strong><u>vDefend Distributed Firewall - Complete User Created Security Policy - Summaries</u></strong></span>
+		<p>
+        This report was generated using <b>Targeted Mode</b>. All Security Policies and associated objects are 
+		included in this report, regardless of creation date. 
     	</p>
 "@
 
@@ -394,6 +407,8 @@ function Invoke-OutputReport {
 	}
 
 	Write-Host "Generating output file..."
+
+	$today = Get-Date -Format "dddd, MMMM dd, yyyy"
 
 	# Start the HTML 
 	$html = @"
@@ -407,10 +422,83 @@ function Invoke-OutputReport {
         <img src="logo.png" alt="Logo" class="logo">
     </div>
 	<p style="text-align:center;">
-        <span style="font-size:22px;"><strong>vDefend Segmentation Report</strong></span>
+        <span style="font-size:22px;"><strong>Professional Services vDefend Segmentation Report</strong></span>
+    </p>
+	<p style="text-align:center;">
+        <span style="font-size:18px;"><strong>Report Creation Date -  $($today)</strong></span>
     </p>
 
-    $dateLine
+	<br>
+	<section>
+    	<h3><u>Introduction</h3></u>
+		<p>
+			This report provides a <strong>clear and structured overview</strong> of user-created security policies and firewall rules within your environment. 
+			It is designed to help you understand your current security configurations, how firewall rules are applied, and the objects associated with these policies.
+		</p>
+
+		<p>To ensure clarity, the report is divided into the following sections:</p>
+
+		<ul>
+			<li>
+				<strong>Report Capture Modes</strong> – Explains how the data was collected, whether as a 
+				<em>complete snapshot of all user-created policies</em> or a 
+				<em>targeted view of policies created after a specific date</em>. 
+				The mode used for this report is noted in this section.
+			</li>
+			<li>
+				<strong>Security Policy and Firewall Rule Summary</strong> – Highlights the total number of 
+				<em>user-created security policies and firewall rules</em>, grouped by category. 
+				It also includes a summary of <em>services, context profiles, and groups</em> that support these rules.
+			</li>
+			<li>
+				<strong>Firewall Policy Overview</strong> – Provides a <em>snapshot of the firewall policy</em> at the time of reporting, 
+				ensuring transparency into the current security setup. 
+				<strong>System-owned policies and objects are excluded</strong>, so the report focuses solely on configurations created by users.
+			</li>
+		</ul>
+
+		<p>
+			This report is designed to give you <strong>a clear view of your security policies and firewall rules</strong>, 
+			helping you manage and optimize your security posture with confidence.
+    </p>
+	</section>
+	<section>
+		<h3><u>Report Capture Modes</h3></u>
+		<p>
+			This report operates in two distinct modes:
+		</p>
+		
+		<ul>
+			<li><strong>Complete Mode</strong> – Captures <em>all user-created security policies, firewall rules, and objects</em>, regardless of their creation time.</li>
+			<li><strong>Targeted Mode</strong> – Captures <em>only user-created policies and objects that were created after a specified date</em>, providing a focused view of recent security changes.</li>
+		</ul>
+
+		<p>The selected mode determines the scope of the data presented in this report.</p>
+
+    	$dateLine
+
+	</section>
+
+	
+	<section>
+		<h3><u>Security Policy and Firewall Rule Summary</u></h3>
+		<p>
+			This section provides an overview of <strong>user-created security policies, firewall rules, and associated distributed firewall objects</strong> within the environment. 
+			It details the total number of <strong>security policies</strong> configured across various categories, including 
+			<em>Ethernet, Emergency, Infrastructure, Environment, and Application</em>.
+		</p>
+		
+		<p>
+			Additionally, it highlights the <strong>distribution of firewall rules</strong> across these categories, 
+			offering insights into policy enforcement and segmentation. The section also includes a summary of 
+			<strong>user-defined distributed firewall objects</strong>, such as <em>services, context profiles, and groups</em>, 
+			which support rule implementation.
+		</p>
+		
+		<p><strong>Note:</strong> This summary <em>excludes system-owned policies and objects</em> and only accounts for security configurations explicitly created by users.</p>
+	</section>
+
+
 
     <br>
     <table style="width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 16px; border: 2px solid #000;">
@@ -505,8 +593,39 @@ function Invoke-OutputReport {
 	<p>&nbsp;</p>
 
 	
-	<p style="text-align:center;"><span style="font-size:18px;"><strong><u>vDefend Distributed Firewall - User Created Policy Snapshot</u></strong></span></p>
+	<section>
+    <h3><u>Firewall Policy Overview</h3></u>
+    <p>
+        This section presents a <strong>snapshot of the entire firewall policy</strong> as it was captured at the time of reporting. 
+        It includes a comprehensive overview of all <strong>user-created security policies, firewall rules, and associated objects</strong>, 
+        providing insight into the current configuration and policy structure.
+    </p>
+    
+	<p>
+		
+        With <strong>DFW policies and rules</strong>, the <strong>'Applied To'</strong> setting can be configured 
+        <em>directly on an individual rule</em> or <em>overridden at the Security Policy level</em>. 
+        In the <strong>section below</strong>, when <strong>'Applied To'</strong> is set at the 
+        <strong>Security Policy level</strong>, a notation appears in the <strong>Policy Name</strong> 
+        section, and an <strong>asterisk (*)</strong> is placed beside the group(s) in the 
+        <strong>'Applied To'</strong> field for each rule within the policy.
+    </p>
+
+    <p>
+        It is important to note that in the <strong>NSX UI</strong>, the <strong>'Applied To'</strong> setting 
+        can still be configured at the <em>rule level</em>, even when a <em>Security Policy-level 'Applied To'</em> exists. 
+        However, in this case, the <em>rule-level setting is purely cosmetic</em> and is fully 
+        <strong>overridden by the Security Policy's configuration</strong>.
+    </p>
+
+    <p>
+        Therefore, the information below reflects the <strong>effective 'Applied To' configuration</strong>, 
+        not the <em>cosmetic UI representation</em>.
+    </p>
 	
+    <p><strong>Note:</strong> System-owned policies are <em>excluded</em> from this report, ensuring that only user-defined security configurations are represented.</p>
+</section>
+
 
 
 	<p>&nbsp;</p>
