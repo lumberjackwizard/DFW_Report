@@ -188,6 +188,10 @@ function Invoke-GeneratePolicyReport {
 			$rowStyle = ' style="background-color: #4682B4; "' 
 		} elseif ($secpolicy.category -eq "Application") {
 			$rowStyle = ' style="background-color: #995CD5; "' 
+		} elseif ($secpolicy.category -eq "Ethernet") {
+			$rowStyle = ' style="background-color: #6F869E; "' 
+		} elseif ($secpolicy.category -eq "Emergency") {
+			$rowStyle = ' style="background-color: #C74C4C; "' 
 		}
     
     # Add the row to the HTML
@@ -324,9 +328,9 @@ function Invoke-GeneratePolicyReport {
 						
 			# Add the row to the HTML
 			if ($rowCount % 2) {
-				$rowStyle2 = ' style="background-color: #B0C4DE;"'
+				$rowStyle2 = ' style="background-color: #C4C4C4;"'
 			} else { 
-				$rowStyle2 = ' style="background-color: #949BAF;"'
+				$rowStyle2 = ' style="background-color: #AEB6BC;"'
 			}
 
 			# Adding logic to alter the colors of the first two columns depending on the policy category
@@ -338,6 +342,10 @@ function Invoke-GeneratePolicyReport {
 				$nullStyle = ' style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td' 
 			} elseif ($secpolicy.category -eq "Application") {
 				$nullStyle = ' style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td' 
+			} elseif ($secpolicy.category -eq "Ethernet") {
+				$nullStyle = ' style="background-color: #98AFC4; border-bottom: none; border-top: none;" colspan=2></td' 
+			} elseif ($secpolicy.category -eq "Emergency") {
+				$nullStyle = ' style="background-color: #E07A7A; border-bottom: none; border-top: none;" colspan=2></td' 
 			}
 	
 		#<td style='background-color: #6BAC82; border-bottom: none; border-top: none;' colspan=2></td>
@@ -509,6 +517,14 @@ function Invoke-OutputReport {
 			</tr>
 		</thead>
 		<tbody>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Ethernet</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #6F869E; width: 40px;">&nbsp;</td>
+			</tr>
+			<tr>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Emergency</td>
+				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #C74C4C; width: 40px;">&nbsp;</td>
+			</tr>
 			<tr>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc;">Infrastructure</td>
 				<td style="padding: 10px; border-bottom: 1px solid #ccc; text-align: center; background-color: #2F8A4C; width: 40px;">&nbsp;</td>
