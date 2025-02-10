@@ -209,18 +209,38 @@ function Invoke-GeneratePolicyReport {
 		$rowCount = 0
 		foreach ($rule in $sortrules | Where-object {$_.id}){
 			
-			
-			
 			$ruleentryname = $rule.display_name
 			$ruleentryaction = $rule.action
-	
-			$ruleentrysrc = ""
-			$ruleentrydst = ""
-			$ruleentrysvc = ""
-			$ruleentrycxtpro = ""
-			$ruleentryappliedto = ""
+			#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
+			#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
+			#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
+			$ruleentrysrc = (($allsecgroups | Where-Object {$_.path -in $rule.source_groups}).display_name -join "`n")
+			if (-not $ruleentrysrc) {
+				$ruleentrysrc = "Any"
+			}
 
-			foreach ($srcgroup in $rule.source_groups){
+			$ruleentrydst = (($allsecgroups | Where-Object {$_.path -in $rule.destination_groups}).display_name -join "`n")
+			if (-not $ruleentrydst) {
+				$ruleentrydst = "Any"
+			}
+
+			$ruleentrysvc = (($allsecservices | Where-Object {$_.path -in $rule.services}).display_name -join "`n")
+			if (-not $ruleentrysvc) {
+				$ruleentrysvc = "Any"
+			}
+
+			$ruleentrycxtpro = (($allseccontextprofiles | Where-Object {$_.path -in $rule.profiles}).display_name -join "`n")
+			if (-not $ruleentrycxtpro) {
+				$ruleentrycxtpro = ""
+			}
+
+			$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
+			if (-not $ruleentryappliedto) {
+				$ruleentryappliedto = "DFW"
+			}
+
+
+			<# foreach ($srcgroup in $rule.source_groups){
 				$n = 0
 				foreach ($filteredgroup in $allsecgroups){
 					if ($filteredgroup.path -eq $srcgroup){
@@ -233,7 +253,9 @@ function Invoke-GeneratePolicyReport {
 				if ($n -eq "0") {
 					$ruleentrysrc += $srcgroup + "`n"
 					}	
-			}
+			} 
+
+
 			
 			
 			foreach ($dstgroup in $rule.destination_groups){  
@@ -296,6 +318,7 @@ function Invoke-GeneratePolicyReport {
 					$ruleentryappliedto += $appliedtogroup + "`n"
 					}	
 			}
+			#>
 				
 			$rowCount++
 						
