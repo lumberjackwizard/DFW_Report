@@ -390,7 +390,7 @@ function Invoke-OutputReport {
 
 		@"
 		<p>
-        This report was generated using <b>Targeted Mode</b> with a start date of <b>$($startDate[0])<\b>.
+        This report was generated using <u><b>Targeted Mode</b></u> with a start date of <u><b>$($startDate[0])</b></u>.
 		Security Polices and associated objects created on or after this date will be included. 
     	</p>
 "@
