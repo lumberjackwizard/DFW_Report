@@ -398,7 +398,7 @@ function Invoke-OutputReport {
 
 		@"
 		<p>
-        This report was generated using <u><b>Complete Mode</b><u>. All Security Policies and associated objects are 
+        This report was generated using <u><b>Complete Mode</b></u>. All Security Policies and associated objects are 
 		included in this report, regardless of creation date. 
     	</p>
 "@
