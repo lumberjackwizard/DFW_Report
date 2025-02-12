@@ -106,62 +106,72 @@ function Get-StartDate {
 }
 function Invoke-GenerateBreakdownReport {
 	
-	$eth_category = 0
-	$emer_category = 0
-	$infra_category = 0
-	$env_category = 0
-	$app_category = 0
+	
+	#Gathering Category and Rule counts
+	# Initialize counts
 	$policy_count = 0
 	$rule_count = 0
-	$eth_rule_count = 0
-	$emer_rule_count = 0
-	$infra_rule_count = 0
-	$env_rule_count = 0
-	$app_rule_count = 0
 
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
+	# Hashtable for category and rule counts
+	$categoryCounts = @{
+		"Infrastructure" = 0
+		"Environment"    = 0
+		"Application"    = 0
+		"Ethernet"       = 0
+		"Emergency"      = 0
+	}
+
+	$ruleCounts = @{
+		"Infrastructure" = 0
+		"Environment"    = 0
+		"Application"    = 0
+		"Ethernet"       = 0
+		"Emergency"      = 0
+	}
+
+	# Filter and process security policies
+	foreach ($secpolicy in $allsecpolicies | Where-Object {
+		$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time
+	}) {
 		$policy_count++
-		if ($secpolicy.category -eq "Infrastructure") {
-        	$infra_category++
-			foreach ($rule in $secpolicy.children.Rule){
-				$infra_rule_count++
+
+		# If category exists in the hashtable, increment the category count
+		if ($categoryCounts.ContainsKey($secpolicy.category)) {
+			$categoryCounts[$secpolicy.category]++
+			foreach ($rule in $secpolicy.children.Rule) {
+				$ruleCounts[$secpolicy.category]++
+				$rule_count++
 			}
-    	} elseif ($secpolicy.category -eq "Environment") {
-			$env_category++
-			foreach ($rule in $secpolicy.children.Rule){
-				$env_rule_count++
-			}
-		} elseif ($secpolicy.category -eq "Application") {
-			$app_category++
-			foreach ($rule in $secpolicy.children.Rule){
-				$app_rule_count++
-			}
-		} elseif ($secpolicy.category -eq "Ethernet") {
-			$eth_category++
-			foreach ($rule in $secpolicy.children.Rule){
-				$eth_rule_count++
-			}
-		} elseif ($secpolicy.category -eq "Emergency") {
-			$emer_category++
-			foreach ($rule in $secpolicy.children.Rule){
-				$emer_rule_count++
-			}
-		}
-		foreach ($rule in $secpolicy.children.Rule){
-			$rule_count++
+		} else {
+			# Handle unexpected categories (optional)
+			Write-Warning "Unexpected category found: $($secpolicy.category)"
 		}
 	}
 
+	$eth_category = $($categoryCounts["Ethernet"])
+	$emer_category = $($categoryCounts["Emergency"])
+	$infra_category = $($categoryCounts["Infrastructure"])
+	$env_category = $($categoryCounts["Environment"])
+	$app_category = $($categoryCounts["Application"])
+	$eth_rule_count = $($ruleCounts["Ethernet"])
+	$emer_rule_count = $($ruleCounts["Emergency"])
+	$infra_rule_count = $($ruleCounts["Infrastructure"])
+	$env_rule_count = $($ruleCounts["Environment"])
+	$app_rule_count = $($ruleCounts["Application"])
+
+	#Gathering service counts
 	$svc_count = 0
 	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate[1] -le $_._create_time}){
 		$svc_count++
 	}
 
+	#Gathering context profile counts
 	$cxt_pro_count = 0
 	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
 		$cxt_pro_count++
 	}
 
+	#Gathering group counts
 	$group_count = 0
 	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
 		$group_count++
@@ -181,18 +191,19 @@ function Invoke-GeneratePolicyReport {
 		
     # Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 	
-    	$rowStyle = ''
-    	if ($secpolicy.category -eq "Infrastructure") {
-        	$rowStyle = ' style="background-color: #2F8A4C; "' 
-    	} elseif ($secpolicy.category -eq "Environment") {
-			$rowStyle = ' style="background-color: #4682B4; "' 
-		} elseif ($secpolicy.category -eq "Application") {
-			$rowStyle = ' style="background-color: #995CD5; "' 
-		} elseif ($secpolicy.category -eq "Ethernet") {
-			$rowStyle = ' style="background-color: #6F869E; "' 
-		} elseif ($secpolicy.category -eq "Emergency") {
-			$rowStyle = ' style="background-color: #C74C4C; "' 
-		}
+	$categoryColors = @{
+		"Infrastructure" = "#2F8A4C"
+		"Environment"    = "#4682B4"
+		"Application"    = "#995CD5"
+		"Ethernet"       = "#6F869E"
+		"Emergency"      = "#C74C4C"
+	}
+	
+	$rowStyle = ""
+	if ($categoryColors.ContainsKey($secpolicy.category)) {
+		$rowStyle = " style=`"background-color: $($categoryColors[$secpolicy.category]); `""
+	}
+	
     
 		#logic to add applied to notation to applicable policy
 		$policy_Applied_To = $null
@@ -347,17 +358,19 @@ function Invoke-GeneratePolicyReport {
 			# Adding logic to alter the colors of the first two columns depending on the policy category
 
 	
-			if ($secpolicy.category -eq "Infrastructure") {
-				$nullStyle = ' style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td' 
-			} elseif ($secpolicy.category -eq "Environment") {
-				$nullStyle = ' style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td' 
-			} elseif ($secpolicy.category -eq "Application") {
-				$nullStyle = ' style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td' 
-			} elseif ($secpolicy.category -eq "Ethernet") {
-				$nullStyle = ' style="background-color: #98AFC4; border-bottom: none; border-top: none;" colspan=2></td' 
-			} elseif ($secpolicy.category -eq "Emergency") {
-				$nullStyle = ' style="background-color: #E07A7A; border-bottom: none; border-top: none;" colspan=2></td' 
+			$categoryNullStyles = @{
+				"Infrastructure" = ' style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td'
+				"Environment"    = ' style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td'
+				"Application"    = ' style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td'
+				"Ethernet"       = ' style="background-color: #98AFC4; border-bottom: none; border-top: none;" colspan=2></td'
+				"Emergency"      = ' style="background-color: #E07A7A; border-bottom: none; border-top: none;" colspan=2></td'
 			}
+			
+			$nullStyle = ""
+			if ($categoryNullStyles.ContainsKey($secpolicy.category)) {
+				$nullStyle = $categoryNullStyles[$secpolicy.category]
+			}
+			
 	
 		#<td style='background-color: #6BAC82; border-bottom: none; border-top: none;' colspan=2></td>
 
