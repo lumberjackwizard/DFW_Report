@@ -954,6 +954,9 @@ function Invoke-OutputReport {
 	<p style="text-align:center;">
         <span style="font-size:18px;"><strong>Report Creation Date -  $($today)</strong></span>
     </p>
+	<p style="text-align:center;">
+        <span style="font-size:18px;"><strong>Targeted NSX Manager for Report Generation: $($nsxmgr)</strong></span>
+    </p>
 
 	<br>
 	<section>
