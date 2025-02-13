@@ -7,15 +7,21 @@ param (
 
 
 function Invoke-CheckNSXCredentials(){
-	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
+	if ($localOrGlobal -match "^[yY]$") {
+		$checkUri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra'
+	} else {
+		$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
+	}
+
+	Write-Host "checkuri is $checkUri"
 
 	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
 	$response = Invoke-WebRequest -Uri $checkUri -Method Get -SkipCertificateCheck -Authentication Basic -Credential $Cred -SkipHttpErrorCheck
 	
 	if ($response.StatusCode -eq 200) {
-		Write-Host "Successfully connected to NSX Manager. Status: 200 OK"
+		Write-Host "Successfully connected to NSX Manager $nsxmgr. Status: 200 OK"
 	} else {
-		Write-Host "Failed to connect to NSX Manager." 
+		Write-Host "Failed to connect to NSX Manager $nsxmgr." 
 		Write-Host "Status: $($response.StatusCode)"
 		Write-Host "Error Message:" ($response.Content)
 		Write-Host "Exiting script... Please try again. "
@@ -238,11 +244,17 @@ function Invoke-GeneratePolicyReport {
 				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
 				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
 				$ruleentrysrc = (($allsecgroups | Where-Object {$_.path -in $rule.source_groups}).display_name -join "`n")
+				if ($rule.sources_excluded -eq "true"){
+					$ruleentrysrc = "<s>$ruleentrysrc</s>"
+				}
 				if (-not $ruleentrysrc) {
 					$ruleentrysrc = "Any"
 				}
 
 				$ruleentrydst = (($allsecgroups | Where-Object {$_.path -in $rule.destination_groups}).display_name -join "`n")
+				if ($rule.destinations_excluded -eq "true"){
+					$ruleentrydst = "<s>$ruleentrydst</s>"
+				}
 				if (-not $ruleentrydst) {
 					$ruleentrydst = "Any"
 				}
@@ -267,85 +279,7 @@ function Invoke-GeneratePolicyReport {
 					}
 				}
 
-				<# foreach ($srcgroup in $rule.source_groups){
-					$n = 0
-					foreach ($filteredgroup in $allsecgroups){
-						if ($filteredgroup.path -eq $srcgroup){
-							$ruleentrysrc += $filteredgroup.display_name + "`n"
-							$n = 1
-							break
-						}
-						
-					}
-					if ($n -eq "0") {
-						$ruleentrysrc += $srcgroup + "`n"
-						}	
-				} 
-
-
 				
-				
-				foreach ($dstgroup in $rule.destination_groups){  
-					$n = 0
-					foreach ($filteredgroup in $allsecgroups){
-						if ($filteredgroup.path -eq $dstgroup){
-							$ruleentrydst += $filteredgroup.display_name + "`n"
-							$n = 1
-							break
-						}
-						
-					}
-					if ($n -eq "0") {
-						$ruleentrydst += $dstgroup + "`n"
-					}
-				}	
-
-				foreach ($svcgroup in $rule.services){ 
-					$n = 0
-					foreach ($filsvc in $allsecservices){
-						if ($filsvc.path -eq $svcgroup){
-							$ruleentrysvc += $filsvc.display_name + "`n"
-							$n = 1
-							break
-						}
-						
-					}
-					if ($n -eq "0") {
-						$ruleentrysvc += $svcgroup + "`n"
-					}							
-				}
-				
-				
-				foreach ($cxtprogroup in $rule.profiles){  
-					$n = 0
-					foreach ($filctxpro in $allseccontextprofiles){
-						if ($filctxpro.path -eq $cxtprogroup){
-							$ruleentrycxtpro += $filctxpro.display_name + "`n"
-							$n = 1
-							break
-						}
-						
-					}
-					if ($n -eq "0") {
-						$ruleentrycxtpro += $cxtprogroup + "`n"
-					}
-				}
-
-				foreach ($appliedtogroup in $rule.scope){
-					$n = 0
-					foreach ($filteredgroup in $allsecgroups){
-						if ($filteredgroup.path -eq $appliedtogroup){
-							$ruleentryappliedto += $filteredgroup.display_name + "`n"
-							$n = 1
-							break
-						}
-						
-					}
-					if ($n -eq "0") {
-						$ruleentryappliedto += $appliedtogroup + "`n"
-						}	
-				}
-				#>
 					
 				$rowCount++
 							
@@ -1130,7 +1064,14 @@ function Invoke-OutputReport {
         It includes a comprehensive overview of all <strong>user-created security policies, firewall rules, and associated objects</strong>, 
         providing insight into the current configuration and policy structure.
     </p>
-    
+    <p>
+       If <strong>"Negate Selections"</strong> has been configured for sources or destinations in a firewall rule, the groups making up 
+	   those sources or destinations will be marked with a strikethrough.
+	   <br>
+	   For example, a negated group in a firewall rule will appear as: <strong><s>Test Group</s></strong>
+    </p>
+	
+
 	<p>
 		
         With <strong>DFW policies and rules</strong>, the <strong>'Applied To'</strong> setting can be configured 
@@ -1257,8 +1198,33 @@ $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX User
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra
 
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
+$localOrGlobal = ""
+
+while (-not $localOrGlobal -or $localOrGlobal -eq "") {
+    $localOrGlobal = Read-Host "Is the NSX Manager a Global NSX Manager? <Y/N>"
+    
+    if ($localOrGlobal -match "^[yYnN]$") {  # Accepts Y, y, N, n only
+        if ($localOrGlobal -match "^[yY]$") {
+			Write-Host ""
+            Write-Host "$nsxmgr will be queried as a Global NSX Manager."
+			Write-Host ""
+			$Uri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
+			$SvcUri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=Service;'
+
+        } else {
+			Write-Host ""
+            Write-Host "$nsxmgr will be queried as a Local NSX Manager."
+			Write-Host ""
+			$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
+			$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
+
+        }
+		continue
+    } else {
+        Write-Host "Invalid input, please enter Y or N."
+        $localOrGlobal = ""  # Reset value to continue loop
+    }
+}
 
 
 #Verify NSX credentials work before trying to fully gather data
