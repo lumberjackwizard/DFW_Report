@@ -3,8 +3,8 @@
 param (
     [switch]$TestMode
 )
-
-
+$scriptTimer = [System.Diagnostics.Stopwatch]::StartNew()
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Invoke-CheckNSXCredentials(){
 	if ($localOrGlobal -match "^[yY]$") {
@@ -13,7 +13,6 @@ function Invoke-CheckNSXCredentials(){
 		$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
 	}
 
-	Write-Host "checkuri is $checkUri"
 
 	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
 	$response = Invoke-WebRequest -Uri $checkUri -Method Get -SkipCertificateCheck -Authentication Basic -Credential $Cred -SkipHttpErrorCheck
@@ -30,6 +29,14 @@ function Invoke-CheckNSXCredentials(){
 
 }
 
+# Define the custom order for categories
+$categoryOrder = @(
+	"Ethernet", 
+	"Emergency",
+	"Infrastructure", 
+	"Environment", 
+	"Application"
+)
 function Get-NSXDFW(){
 
 	# The below gathers all securitypolicies, groups, and services from infra, storing it in 
@@ -37,35 +44,71 @@ function Get-NSXDFW(){
 
 	Write-Host "Requesting data from target NSX Manager..."
 
+	$stopwatch.Restart()
+
 	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 
+	Write-Host "API data gathered in $($stopwatch.Elapsed)"
+
 	# Gathering security policies
 
-	Write-Host "Gathering DFW Security Policies and rules..."
+	Write-Host "Processing DFW Security Policies and rules..."
+	$stopwatch.Restart()
 
-	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property internal_sequence_number
+
+	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id -And $_.is_default -eq $false})
+	
+	# Convert to a .NET List
+	$list = [System.Collections.Generic.List[PSCustomObject]]::new()
+	# Convert each object in $secpolicies to PSCustomObject before adding
+	@($secpolicies) | ForEach-Object { $list.Add([PSCustomObject]$_) }
+	# Sort in place using .NET's built-in Sort()
+	$list.Sort([System.Comparison[PSCustomObject]]{
+		param ($a, $b) 
+		[int]$a.internal_sequence_number - [int]$b.internal_sequence_number
+	})
+
+	# Now $list is sorted
+	$sortedSecPolicies = $list
+
+		
+	foreach ($line in $sortedSecPolicies){
+		write-host $line.display_name , $line.internal_sequence_number
+		 
+	}
+
+	
+	Write-Host "Security Polices and Rules processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	
 
 	# Gathering Groups
 
-	Write-Host "Gathering Groups..."
+	Write-Host "Processing Groups..."
+	$stopwatch.Restart()
 
-	$allgroups = $rawpolicy.children.Domain.children.Group | Where-object {$_.id}
+	$allgroups = $rawpolicy.children.Domain.children.Group.Where({$_.id})
 
+	Write-Host "Groups processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
-	Write-Host "Gathering Serivces..."
+	Write-Host "Processing Serivces..."
+	$stopwatch.Restart()
 
-	$allservices = $rawservices.children.Service | Where-object {$_.id}
-
+	$allservices = $rawservices.children.Service.Where({$_.id})
+	Write-Host "Services processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 	# Gathering Context Profiles
 
-	Write-Host "Gathering Context Profiles..."
+	Write-Host "Processing Context Profiles..."
+	$stopwatch.Restart()
 
-	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
+	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile.Where({$_.id})
+
+	Write-Host "Context Profiles processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+
 
 	return [pscustomobject]@{
-        SecPolicies =        $secpolicies
+        SecPolicies =        $sortedSecPolicies
 		AllGroups   =        $allgroups
 		AllServices =        $allservices
 		AllContextProfiles = $allcontextprofiles
@@ -1311,7 +1354,10 @@ $report_counts = Invoke-GenerateBreakdownReport
 #final function create the actual html output file utilizing the data gathered in prior steps
 Invoke-OutputReport
 
+$scriptTimer.Stop()
 
+# Display total execution time
+Write-Host "Total script execution time: $($scriptTimer.Elapsed) (HH:MM:SS:MS)"
 
 
 
