@@ -4,7 +4,7 @@ param (
     [switch]$TestMode
 )
 
-
+$scriptTimer = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Invoke-CheckNSXCredentials(){
 	if ($localOrGlobal -match "^[yY]$") {
@@ -1312,6 +1312,10 @@ $report_counts = Invoke-GenerateBreakdownReport
 Invoke-OutputReport
 
 
+$scriptTimer.Stop()
+
+# Display total execution time
+Write-Host "Total script execution time: $($scriptTimer.Elapsed) (HH:MM:SS:MS)"
 
 
 
