@@ -59,6 +59,7 @@ function Get-NSXDFW(){
 
 	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id -And $_.is_default -eq $false})
 	
+	#The below is to try and sort the security polices without relying on pipelining to Sort-Object, as it's slow for large data sets
 	# Convert to a .NET List
 	$list = [System.Collections.Generic.List[PSCustomObject]]::new()
 	# Convert each object in $secpolicies to PSCustomObject before adding
@@ -73,10 +74,10 @@ function Get-NSXDFW(){
 	$sortedSecPolicies = $list
 
 		
-	foreach ($line in $sortedSecPolicies){
-		write-host $line.display_name , $line.internal_sequence_number
+	# foreach ($line in $sortedSecPolicies){
+	# 	write-host $line.display_name , $line.internal_sequence_number
 		 
-	}
+	# }
 
 	
 	Write-Host "Security Polices and Rules processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
@@ -155,7 +156,9 @@ function Get-StartDate {
 }
 function Invoke-GenerateBreakdownReport {
 	
-	
+
+	Write-Host "Generating Report Summaries..."
+	$stopwatch.Restart()
 	#Gathering Category and Rule counts
 
 	# Initialize counts
@@ -180,23 +183,35 @@ function Invoke-GenerateBreakdownReport {
 	}
 
 	# Filter and process security policies
-	foreach ($secpolicy in $allsecpolicies | Where-Object {
-		$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time
-	}) {
-		$policy_count++
+	$policy_count = $allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
+	$rule_count = ($allsecpolicies.children.Rule).Count
+	
 
-		# If category exists in the hashtable, increment the category count
-		if ($categoryCounts.ContainsKey($secpolicy.category)) {
-			$categoryCounts[$secpolicy.category]++
-			foreach ($rule in $secpolicy.children.Rule) {
-				$ruleCounts[$secpolicy.category]++
-				$rule_count++
-			}
-		} else {
-			# Handle unexpected categories (optional)
-			Write-Warning "Unexpected category found: $($secpolicy.category)"
-		}
-	}
+	$allsecpolicies.Where({
+		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
+			# If category exists in the hashtable, increment the category count
+			#if ($categoryCounts.ContainsKey($_.category)) {
+				$categoryCounts[$_.category] = 
+				$ruleCounts[$_.category] = ($_.children.Rule).Count
+			#}
+		})
+		
+
+	
+	# foreach ($secpolicy in $allsecpolicies.Where({
+	# 	$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}))
+	#  	{
+	# 		#$policy_count++
+
+	# 		# If category exists in the hashtable, increment the category count
+	# 		if ($categoryCounts.ContainsKey($secpolicy.category)) {
+	# 			$categoryCounts[$secpolicy.category]++
+	# 			#foreach ($rule in $secpolicy.children.Rule) {
+	# 				$ruleCounts[$secpolicy.category] = ($secpolicy.children.Rule).Count
+	# 				#$rule_count++
+	# 			#}
+	# 		}
+	# 	}
 
 	$eth_category = $($categoryCounts["Ethernet"])
 	$emer_category = $($categoryCounts["Emergency"])
@@ -210,26 +225,29 @@ function Invoke-GenerateBreakdownReport {
 	$app_rule_count = $($ruleCounts["Application"])
 
 	#Gathering service counts
-	$svc_count = 0
-	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate[1] -le $_._create_time}){
-		$svc_count++
-	}
+	$svc_count = $allsecservices.Where({-not $_.is_default -And $startDate[1] -le $_._create_time}).Count
+
+
+	
+	# foreach ($svc in $allsecservices.Where({-not $_.is_default -And $startDate[1] -le $_._create_time})){
+	# 	$svc_count++
+	# }
 
 	#Gathering context profile counts
-	$cxt_pro_count = 0
-	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
-		$cxt_pro_count++
-	}
+	$cxt_pro_count = $allseccontextprofiles.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
+	# foreach ($cxt_pro in $allseccontextprofiles.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time})){
+	# 	$cxt_pro_count++
+	# }
 
 	#Gathering group counts
-	$group_count = 0
-	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
-		$group_count++
-	}
+	$group_count = $allsecgroups.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
+	# foreach ($grp in $allsecgroups.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time})){
+	# 	$group_count++
+	# }
 
 	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category,$infra_rule_count,$env_rule_count,$app_rule_count,$eth_category,$emer_category,$eth_rule_count,$emer_rule_count)
 
-
+	Write-Host "Report Summaries generated in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 	return $report_counts
 }
 
@@ -237,8 +255,12 @@ function Invoke-GeneratePolicyReport {
 
 	
 	# Loop through the data to create rows with conditional formatting
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
-		
+	$allsecpolicies.Where({
+		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
+	#foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
+		Write-Host "Processing Security Policy: $($_.display_name)"
+		$stopwatch.Reset
+
 		# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 		
 		$categoryColors = @{
@@ -250,22 +272,22 @@ function Invoke-GeneratePolicyReport {
 		}
 		
 		$rowStyle = ""
-		if ($categoryColors.ContainsKey($secpolicy.category)) {
-			$rowStyle = " style=`"background-color: $($categoryColors[$secpolicy.category]); `""
+		if ($categoryColors.ContainsKey($_.category)) {
+			$rowStyle = " style=`"background-color: $($categoryColors[$_.category]); `""
 		}
 		
 		
 			#logic to add applied to notation to applicable policy
 			$policy_Applied_To = $null
 
-			if ($secpolicy.scope -ne "ANY"){
+			if ($_.scope -ne "ANY"){
 				$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
 			}
 		
 			# Add the row to the HTML
 			$html_policy += "    <tr$rowStyle>
-				<td style='font-weight: bold;'>$($secpolicy.category)</td>
-				<td>$($secpolicy.display_name)</td>
+				<td style='font-weight: bold;'>$($_.category)</td>
+				<td>$($_.display_name)</td>
 				<td colspan=7>$($policy_Applied_To)</td>
 			</tr>`n"
 
@@ -274,7 +296,7 @@ function Invoke-GeneratePolicyReport {
 		# Gathering all rules and polices
 
 			
-			$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
+			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number
 
 			
 		
@@ -313,8 +335,8 @@ function Invoke-GeneratePolicyReport {
 				}
 
 				
-				if ($secpolicy.scope -ne "ANY"){
-					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $secpolicy.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
+				if ($_.scope -ne "ANY"){
+					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
 				} else {
 					$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
 					if (-not $ruleentryappliedto) {
@@ -345,8 +367,8 @@ function Invoke-GeneratePolicyReport {
 				}
 				
 				$nullStyle = ""
-				if ($categoryNullStyles.ContainsKey($secpolicy.category)) {
-					$nullStyle = $categoryNullStyles[$secpolicy.category]
+				if ($categoryNullStyles.ContainsKey($_.category)) {
+					$nullStyle = $categoryNullStyles[$_.category]
 				}
 				
 		
@@ -365,7 +387,8 @@ function Invoke-GeneratePolicyReport {
 				
 				
 			}  
-		}
+			Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+		})
 
 		
 
