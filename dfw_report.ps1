@@ -3,8 +3,12 @@
 param (
     [switch]$TestMode
 )
+
+#setting up timers to display how long steps take to complete
 $scriptTimer = [System.Diagnostics.Stopwatch]::StartNew()
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+Write-Host "Memory Optimized for Ken"
 
 function Invoke-CheckNSXCredentials(){
 	if ($localOrGlobal -match "^[yY]$") {
@@ -72,12 +76,6 @@ function Get-NSXDFW(){
 
 	# Now $list is sorted
 	$sortedSecPolicies = $list
-
-		
-	# foreach ($line in $sortedSecPolicies){
-	# 	write-host $line.display_name , $line.internal_sequence_number
-		 
-	# }
 
 	
 	Write-Host "Security Polices and Rules processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
@@ -189,11 +187,8 @@ function Invoke-GenerateBreakdownReport {
 
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
-			# If category exists in the hashtable, increment the category count
-			#if ($categoryCounts.ContainsKey($_.category)) {
-				$categoryCounts[$_.category] = 
-				$ruleCounts[$_.category] = ($_.children.Rule).Count
-			#}
+				$categoryCounts[$_.category]++
+				$ruleCounts[$_.category] += ($_.children.Rule).Count
 		})
 		
 
@@ -298,6 +293,8 @@ function Invoke-GeneratePolicyReport {
 			
 			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number
 
+			
+			
 			
 		
 			$rowCount = 0
