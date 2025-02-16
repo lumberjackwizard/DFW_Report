@@ -290,7 +290,7 @@ function Invoke-GeneratePolicyReport {
 				#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
 				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
 				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
-				$ruleentrysrc = (($allsecgroups | Where-Object {$_.path -in $rule.source_groups}).display_name -join "`n")
+				$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
 				if ($_.sources_excluded -eq "true"){
 					$ruleentrysrc = "<s>$ruleentrysrc</s>"
 				}
@@ -298,7 +298,7 @@ function Invoke-GeneratePolicyReport {
 					$ruleentrysrc = "Any"
 				}
 
-				$ruleentrydst = (($allsecgroups | Where-Object {$_.path -in $rule.destination_groups}).display_name -join "`n")
+				$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
 				if ($_.destinations_excluded -eq "true"){
 					$ruleentrydst = "<s>$ruleentrydst</s>"
 				}
@@ -306,19 +306,19 @@ function Invoke-GeneratePolicyReport {
 					$ruleentrydst = "Any"
 				}
 
-				$ruleentrysvc = (($allsecservices | Where-Object {$_.path -in $rule.services}).display_name -join "`n")
+				$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
 				if (-not $ruleentrysvc) {
 					$ruleentrysvc = "Any"
 				}
 
-				$ruleentrycxtpro = (($allseccontextprofiles | Where-Object {$_.path -in $rule.profiles}).display_name -join "`n")
+				$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
 				if (-not $ruleentrycxtpro) {
 					$ruleentrycxtpro = ""
 				}
 
 				
 				if ($outerPolicy.scope -ne "ANY"){
-					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $outerPolicy.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
+					$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
 				} else {
 					$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
 					if (-not $ruleentryappliedto) {
