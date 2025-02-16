@@ -232,7 +232,7 @@ function Invoke-GenerateBreakdownReport {
 
 function Invoke-GeneratePolicyReport {
 
-
+	
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
@@ -241,7 +241,7 @@ function Invoke-GeneratePolicyReport {
 		$outerPolicy = $_		
 	
 		Write-Host "Processing Security Policy: $($_.display_name)"
-		$stopwatch.Reset
+		$stopwatch.Restart()
 
 		# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 		
