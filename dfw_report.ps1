@@ -190,23 +190,7 @@ function Invoke-GenerateBreakdownReport {
 				$categoryCounts[$_.category]++
 				$ruleCounts[$_.category] += ($_.children.Rule).Count
 		})
-		
 
-	
-	# foreach ($secpolicy in $allsecpolicies.Where({
-	# 	$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}))
-	#  	{
-	# 		#$policy_count++
-
-	# 		# If category exists in the hashtable, increment the category count
-	# 		if ($categoryCounts.ContainsKey($secpolicy.category)) {
-	# 			$categoryCounts[$secpolicy.category]++
-	# 			#foreach ($rule in $secpolicy.children.Rule) {
-	# 				$ruleCounts[$secpolicy.category] = ($secpolicy.children.Rule).Count
-	# 				#$rule_count++
-	# 			#}
-	# 		}
-	# 	}
 
 	$eth_category = $($categoryCounts["Ethernet"])
 	$emer_category = $($categoryCounts["Emergency"])
@@ -248,11 +232,14 @@ function Invoke-GenerateBreakdownReport {
 
 function Invoke-GeneratePolicyReport {
 
-	
+
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
 	#foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
+		
+		$outerPolicy = $_		
+	
 		Write-Host "Processing Security Policy: $($_.display_name)"
 		$stopwatch.Reset
 
@@ -288,25 +275,23 @@ function Invoke-GeneratePolicyReport {
 
 			
 		
-		# Gathering all rules and polices
+		# Gathering all rules in the policy
 
 			
-			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number
-
+			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number		
 			
-			
-			
-		
 			$rowCount = 0
-			foreach ($rule in $sortrules | Where-object {$_.id}){
+			$sortrules.Where({$_.id }).ForEach({
+			#foreach ($rule in $sortrules | Where-object {$_.id}){
 				
-				$ruleentryname = $rule.display_name
-				$ruleentryaction = $rule.action
+				$rule = $_
+				$ruleentryname = $_.display_name
+				$ruleentryaction = $_.action
 				#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
 				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
 				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
 				$ruleentrysrc = (($allsecgroups | Where-Object {$_.path -in $rule.source_groups}).display_name -join "`n")
-				if ($rule.sources_excluded -eq "true"){
+				if ($_.sources_excluded -eq "true"){
 					$ruleentrysrc = "<s>$ruleentrysrc</s>"
 				}
 				if (-not $ruleentrysrc) {
@@ -314,7 +299,7 @@ function Invoke-GeneratePolicyReport {
 				}
 
 				$ruleentrydst = (($allsecgroups | Where-Object {$_.path -in $rule.destination_groups}).display_name -join "`n")
-				if ($rule.destinations_excluded -eq "true"){
+				if ($_.destinations_excluded -eq "true"){
 					$ruleentrydst = "<s>$ruleentrydst</s>"
 				}
 				if (-not $ruleentrydst) {
@@ -332,8 +317,8 @@ function Invoke-GeneratePolicyReport {
 				}
 
 				
-				if ($_.scope -ne "ANY"){
-					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
+				if ($outerPolicy.scope -ne "ANY"){
+					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $outerPolicy.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
 				} else {
 					$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
 					if (-not $ruleentryappliedto) {
@@ -364,8 +349,8 @@ function Invoke-GeneratePolicyReport {
 				}
 				
 				$nullStyle = ""
-				if ($categoryNullStyles.ContainsKey($_.category)) {
-					$nullStyle = $categoryNullStyles[$_.category]
+				if ($categoryNullStyles.ContainsKey($outerPolicy.category)) {
+					$nullStyle = $categoryNullStyles[$outerPolicy.category]
 				}
 				
 		
@@ -383,7 +368,7 @@ function Invoke-GeneratePolicyReport {
 				</tr>`n"
 				
 				
-			}  
+			})  
 			Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 		})
 
@@ -1364,7 +1349,7 @@ max-width: 300px;
 </style>
 "@
 
-#initializing $html_policy variable (although i should not need it) and then assiging it with the output of Invoke-GeneratePolicyReport
+#initializing $html_policy variable (although i should not need to do so) and then assiging it with the output of Invoke-GeneratePolicyReport
 $html_policy = " "
 $html_policy = Invoke-GeneratePolicyReport
 #gathering the report count data
