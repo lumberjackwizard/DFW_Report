@@ -57,7 +57,7 @@ function Get-NSXDFW(){
 
 	# Gathering security policies
 
-	Write-Host "Processing DFW Security Policies and rules..."
+	Write-Host "Identifying DFW Security Policies and rules..."
 	$stopwatch.Restart()
 
 
@@ -78,32 +78,32 @@ function Get-NSXDFW(){
 	$sortedSecPolicies = $list
 
 	
-	Write-Host "Security Polices and Rules processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	Write-Host "Security Polices and Rules identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 	
 
 	# Gathering Groups
 
-	Write-Host "Processing Groups..."
+	Write-Host "Identifying Groups..."
 	$stopwatch.Restart()
 
 	$allgroups = $rawpolicy.children.Domain.children.Group.Where({$_.id})
 
-	Write-Host "Groups processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	Write-Host "Groups identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
-	Write-Host "Processing Serivces..."
+	Write-Host "Identifying Serivces..."
 	$stopwatch.Restart()
 
 	$allservices = $rawservices.children.Service.Where({$_.id})
-	Write-Host "Services processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	Write-Host "Services identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 	# Gathering Context Profiles
 
-	Write-Host "Processing Context Profiles..."
+	Write-Host "Identifying Context Profiles..."
 	$stopwatch.Restart()
 
 	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile.Where({$_.id})
 
-	Write-Host "Context Profiles processed in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	Write-Host "Context Profiles identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 
 	return [pscustomobject]@{
@@ -184,7 +184,7 @@ function Invoke-GenerateBreakdownReport {
 	$policy_count = $allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
 	$rule_count = ($allsecpolicies.children.Rule).Count
 	
-
+	#Breaking down Polices by category and then calulating unique category rules
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
 				$categoryCounts[$_.category]++
@@ -320,7 +320,7 @@ function Invoke-GeneratePolicyReport {
 				if ($outerPolicy.scope -ne "ANY"){
 					$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
 				} else {
-					$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
+					$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
 					if (-not $ruleentryappliedto) {
 						$ruleentryappliedto = "DFW"
 					}
