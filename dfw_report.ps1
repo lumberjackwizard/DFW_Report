@@ -67,7 +67,8 @@ function Get-NSXDFW(){
 	# Convert to a .NET List
 	$list = [System.Collections.Generic.List[PSCustomObject]]::new()
 	# Convert each object in $secpolicies to PSCustomObject before adding
-	@($secpolicies) | ForEach-Object { $list.Add([PSCustomObject]$_) }
+	#@($secpolicies) | ForEach-Object { $list.Add([PSCustomObject]$_) }
+	@($secpolicies).ForEach({ $list.Add([PSCustomObject]$_) })
 	# Sort in place using .NET's built-in Sort()
 	$list.Sort([System.Comparison[PSCustomObject]]{
 		param ($a, $b) 
@@ -279,6 +280,9 @@ function Invoke-GeneratePolicyReport {
 
 			
 			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number		
+	
+			
+			
 			
 			$rowCount = 0
 			$sortrules.Where({$_.id }).ForEach({
