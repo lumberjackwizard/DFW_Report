@@ -51,7 +51,14 @@ function Get-NSXDFW(){
 	$stopwatch.Restart()
 
 	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
-	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred
+
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$rawglobalpolicy = Invoke-RestMethod -Uri $globalUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+		$rawglobalservices = Invoke-RestMethod -Uri $globalSvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred
+	}
+
+
 
 	Write-Host "API data gathered in $($stopwatch.Elapsed)"
 
@@ -88,6 +95,9 @@ function Get-NSXDFW(){
 	$stopwatch.Restart()
 
 	$allgroups = $rawpolicy.children.Domain.children.Group.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allgroups += $rawglobalpolicy.children.Domain.children.Group.Where({$_.id})
+	}
 
 	Write-Host "Groups identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
@@ -95,6 +105,9 @@ function Get-NSXDFW(){
 	$stopwatch.Restart()
 
 	$allservices = $rawservices.children.Service.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allservices += $rawglobalservices.children.Service.Where({$_.id})
+	}
 	Write-Host "Services identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 	# Gathering Context Profiles
@@ -103,6 +116,9 @@ function Get-NSXDFW(){
 	$stopwatch.Restart()
 
 	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allcontextprofiles += $rawglobalpolicy.children.PolicyContextProfile.Where({$_.id})
+	}
 
 	Write-Host "Context Profiles identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
@@ -1251,32 +1267,39 @@ $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX User
 # SvcUri will get only services under infra
 
 $localOrGlobal = ""
+$localManagedByGlobal = ""
 
-while (-not $localOrGlobal -or $localOrGlobal -eq "") {
+# Prompt user to determine if the NSX Manager is Global
+do {
     $localOrGlobal = Read-Host "Is the NSX Manager a Global NSX Manager? <Y/N>"
-    
-    if ($localOrGlobal -match "^[yYnN]$") {  # Accepts Y, y, N, n only
-        if ($localOrGlobal -match "^[yY]$") {
-			Write-Host ""
-            Write-Host "$nsxmgr will be queried as a Global NSX Manager."
-			Write-Host ""
-			$Uri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-			$SvcUri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=Service;'
+} until ($localOrGlobal -match "^[yYnN]$")  # Ensures only Y/y/N/n is accepted
 
-        } else {
-			Write-Host ""
-            Write-Host "$nsxmgr will be queried as a Local NSX Manager."
-			Write-Host ""
-			$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-			$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
+if ($localOrGlobal -match "^[yY]$") {
+    Write-Host "`n$nsxmgr will be queried as a Global NSX Manager.`n"
+    $Uri = "https://$nsxmgr/global-manager/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+    $SvcUri = "https://$nsxmgr/global-manager/api/v1/global-infra?type_filter=Service;"
+} else {
+    # If Local, check if it is managed by a Global NSX Manager
+    do {
+        $localManagedByGlobal = Read-Host "Is the Local NSX Manager managed by a Global NSX Manager? <Y/N>"
+    } until ($localManagedByGlobal -match "^[yYnN]$")  # Ensures only Y/y/N/n is accepted
 
-        }
-		continue
+    if ($localManagedByGlobal -match "^[yY]$") {
+        Write-Host "`nGathering Local and Global objects from $nsxmgr.`n"
+        $Uri = "https://$nsxmgr/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $SvcUri = "https://$nsxmgr/policy/api/v1/infra?type_filter=Service;"
+        $globalUri = "https://$nsxmgr/policy/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $globalSvcUri = "https://$nsxmgr/policy/api/v1/global-infra?type_filter=Service;"
+
+
+
     } else {
-        Write-Host "Invalid input, please enter Y or N."
-        $localOrGlobal = ""  # Reset value to continue loop
+        Write-Host "`n$nsxmgr will be queried as a Local NSX Manager.`n"
+        $Uri = "https://$nsxmgr/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $SvcUri = "https://$nsxmgr/policy/api/v1/infra?type_filter=Service;"
     }
 }
+
 
 
 #Verify NSX credentials work before trying to fully gather data
