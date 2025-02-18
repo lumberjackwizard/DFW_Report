@@ -68,13 +68,13 @@ function Get-NSXDFW(){
 	$stopwatch.Restart()
 
 
-	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id -And $_.is_default -eq $false})
+	#$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id -And $_.is_default -eq $false})
+	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id})
 	
 	#The below is to try and sort the security polices without relying on pipelining to Sort-Object, as it's slow for large data sets
 	# Convert to a .NET List
 	$list = [System.Collections.Generic.List[PSCustomObject]]::new()
 	# Convert each object in $secpolicies to PSCustomObject before adding
-	#@($secpolicies) | ForEach-Object { $list.Add([PSCustomObject]$_) }
 	@($secpolicies).ForEach({ $list.Add([PSCustomObject]$_) })
 	# Sort in place using .NET's built-in Sort()
 	$list.Sort([System.Comparison[PSCustomObject]]{
