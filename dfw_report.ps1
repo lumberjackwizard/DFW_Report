@@ -99,6 +99,10 @@ function Get-NSXDFW(){
 		$allgroups += $rawglobalpolicy.children.Domain.children.Group.Where({$_.id})
 	}
 
+	# Creating a hashset for groups to be used during rule creation for html
+
+
+
 	Write-Host "Groups identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 	Write-Host "Identifying Serivces..."
@@ -150,7 +154,6 @@ function Get-StartDate {
 				# Return the results
 
 				$dates = @($dateInput,$epochMilliseconds)
-				#return $epochMilliseconds
 				return $dates
 			}
 			catch {
@@ -161,7 +164,6 @@ function Get-StartDate {
 
 			$dates = @($dateInput,$epochMilliseconds)
 			return $dates
-			#return $epochMilliseconds
 			Write-Host "No date entered; all Policies will be gathered"
 
 		} else {
@@ -223,23 +225,11 @@ function Invoke-GenerateBreakdownReport {
 	#Gathering service counts
 	$svc_count = $allsecservices.Where({-not $_.is_default -And $startDate[1] -le $_._create_time}).Count
 
-
-	
-	# foreach ($svc in $allsecservices.Where({-not $_.is_default -And $startDate[1] -le $_._create_time})){
-	# 	$svc_count++
-	# }
-
 	#Gathering context profile counts
 	$cxt_pro_count = $allseccontextprofiles.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
-	# foreach ($cxt_pro in $allseccontextprofiles.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time})){
-	# 	$cxt_pro_count++
-	# }
 
 	#Gathering group counts
 	$group_count = $allsecgroups.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
-	# foreach ($grp in $allsecgroups.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time})){
-	# 	$group_count++
-	# }
 
 	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category,$infra_rule_count,$env_rule_count,$app_rule_count,$eth_category,$emer_category,$eth_rule_count,$emer_rule_count)
 
@@ -253,7 +243,6 @@ function Invoke-GeneratePolicyReport {
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
-	#foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
 		
 		$outerPolicy = $_		
 	
@@ -302,7 +291,6 @@ function Invoke-GeneratePolicyReport {
 			
 			$rowCount = 0
 			$sortrules.Where({$_.id }).ForEach({
-			#foreach ($rule in $sortrules | Where-object {$_.id}){
 				
 				$rule = $_
 				$ruleentryname = $_.display_name
@@ -310,7 +298,11 @@ function Invoke-GeneratePolicyReport {
 				#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
 				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
 				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
-				$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
+				#$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
+
+				$rulesrcmatches = $rule.source_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+				$ruleentrysrc = $rulesrcmatches -join "`n"
+
 				if ($_.sources_excluded -eq "true"){
 					$ruleentrysrc = "<s>$ruleentrysrc</s>"
 				}
@@ -318,7 +310,11 @@ function Invoke-GeneratePolicyReport {
 					$ruleentrysrc = "Any"
 				}
 
-				$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
+				#$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
+				
+				$ruledstmatches = $rule.destination_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+				$ruleentrydst = $ruledstmatches -join "`n"
+				
 				if ($_.destinations_excluded -eq "true"){
 					$ruleentrydst = "<s>$ruleentrydst</s>"
 				}
@@ -326,21 +322,30 @@ function Invoke-GeneratePolicyReport {
 					$ruleentrydst = "Any"
 				}
 
-				$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
+				#$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
+				$rulesvcmatches = $rule.services | Where-Object { $allsecservicesLookup.ContainsKey($_) } | ForEach-Object { $allsecservicesLookup[$_] }
+				$ruleentrysvc = $rulesvcmatches -join "`n"
 				if (-not $ruleentrysvc) {
 					$ruleentrysvc = "Any"
 				}
 
-				$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
+				#$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
+				$rulecxtpromatches = $rule.profiles | Where-Object { $allseccontextprofilesLookup.ContainsKey($_) } | ForEach-Object { $allseccontextprofilesLookup[$_] }
+				$ruleentrycxtpro = $rulecxtpromatches -join "`n"
 				if (-not $ruleentrycxtpro) {
 					$ruleentrycxtpro = ""
 				}
 
 				
 				if ($outerPolicy.scope -ne "ANY"){
-					$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
+					$ruleentryappliedtomatches = $outerPolicy.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					#$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
+					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
 				} else {
-					$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
+					#$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
+					$ruleentryappliedtomatches = $rule.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
+
 					if (-not $ruleentryappliedto) {
 						$ruleentryappliedto = "DFW"
 					}
@@ -1265,6 +1270,8 @@ $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX User
 
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra
+# GlobalUri and GlobalSvcUri are only used when an LM has been identified as owned by a GM. This is for cases
+# where local security policies/rules may be utilizing GM owned groups, services, and context profiles. 
 
 $localOrGlobal = ""
 $localManagedByGlobal = ""
@@ -1318,9 +1325,27 @@ $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
+#Dictionary creations
+#creating a dictionary lookup of allsecgroups.path to test speed difference for rule evaluations
+
+$allsecgroupsLookup = @{}
+$allsecgroups | ForEach-Object { $allsecgroupsLookup[$_.path] = $_.display_name }
+
+#creating a dictionary lookup of allsecservices.path to test speed difference for rule evaluations
+
+$allsecservicesLookup = @{}
+$allsecservices | ForEach-Object { $allsecservicesLookup[$_.path] = $_.display_name }
+
+#creating a dictionary lookup of allseccontextprofiles.path to test speed difference for rule evaluations
+
+$allseccontextprofilesLookup = @{}
+$allseccontextprofiles | ForEach-Object { $allseccontextprofilesLookup[$_.path] = $_.display_name }
+
+
+
+
 
 #$header contains the formatting data for the the html file that will be created
-
 $header = @"
 <style>
 table {
