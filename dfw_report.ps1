@@ -8,7 +8,6 @@ param (
 $scriptTimer = [System.Diagnostics.Stopwatch]::StartNew()
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-Write-Host "Memory Optimized for Ken"
 
 function Invoke-CheckNSXCredentials(){
 	if ($localOrGlobal -match "^[yY]$") {
@@ -237,7 +236,9 @@ function Invoke-GenerateBreakdownReport {
 
 function Invoke-GeneratePolicyReport {
 
-	
+	Write-Host "Begin processing of Security Policies..."
+	$stopwatch.Restart()
+
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
 		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
@@ -245,7 +246,7 @@ function Invoke-GeneratePolicyReport {
 		$outerPolicy = $_		
 	
 		Write-Host "Processing Security Policy: $($_.display_name)"
-		$stopwatch.Restart()
+		#$stopwatch.Restart()
 
 		# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 		
@@ -392,13 +393,13 @@ function Invoke-GeneratePolicyReport {
 				
 				
 			})  
-			Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+			#Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 		})
 
 		
 
 
-	
+		Write-Host "Completed Security Policies processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 		return $html_policy
 }
 
