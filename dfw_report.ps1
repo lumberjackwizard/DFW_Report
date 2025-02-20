@@ -4,7 +4,10 @@ param (
     [switch]$TestMode
 )
 
+#setting up timers to display how long steps take to complete
 $scriptTimer = [System.Diagnostics.Stopwatch]::StartNew()
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
 
 function Invoke-CheckNSXCredentials(){
 	if ($localOrGlobal -match "^[yY]$") {
@@ -13,7 +16,6 @@ function Invoke-CheckNSXCredentials(){
 		$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
 	}
 
-	Write-Host "checkuri is $checkUri"
 
 	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
 	$response = Invoke-WebRequest -Uri $checkUri -Method Get -SkipCertificateCheck -Authentication Basic -Credential $Cred -SkipHttpErrorCheck
@@ -30,6 +32,14 @@ function Invoke-CheckNSXCredentials(){
 
 }
 
+# Define the custom order for categories
+$categoryOrder = @(
+	"Ethernet", 
+	"Emergency",
+	"Infrastructure", 
+	"Environment", 
+	"Application"
+)
 function Get-NSXDFW(){
 
 	# The below gathers all securitypolicies, groups, and services from infra, storing it in 
@@ -37,35 +47,85 @@ function Get-NSXDFW(){
 
 	Write-Host "Requesting data from target NSX Manager..."
 
+	$stopwatch.Restart()
+
 	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
-	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+	$rawservices = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred
+
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$rawglobalpolicy = Invoke-RestMethod -Uri $globalUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+		$rawglobalservices = Invoke-RestMethod -Uri $globalSvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred
+	}
+
+
+
+	Write-Host "API data gathered in $($stopwatch.Elapsed)"
 
 	# Gathering security policies
 
-	Write-Host "Gathering DFW Security Policies and rules..."
+	Write-Host "Identifying DFW Security Policies and rules..."
+	$stopwatch.Restart()
 
-	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property internal_sequence_number
+	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy.Where({$_.id})
+
+	#The below is to try and sort the security polices without relying on pipelining to Sort-Object, as it's slow for large data sets
+	# Convert to a .NET List
+	$list = [System.Collections.Generic.List[PSCustomObject]]::new()
+	# Convert each object in $secpolicies to PSCustomObject before adding
+	@($secpolicies).ForEach({ $list.Add([PSCustomObject]$_) })
+	# Sort in place using .NET's built-in Sort()
+	$list.Sort([System.Comparison[PSCustomObject]]{
+		param ($a, $b) 
+		[int]$a.internal_sequence_number - [int]$b.internal_sequence_number
+	})
+
+	# Now $list is sorted
+	$sortedSecPolicies = $list
+
+	
+	Write-Host "Security Polices and Rules identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+	
 
 	# Gathering Groups
 
-	Write-Host "Gathering Groups..."
+	Write-Host "Identifying Groups..."
+	$stopwatch.Restart()
 
-	$allgroups = $rawpolicy.children.Domain.children.Group | Where-object {$_.id}
+	$allgroups = $rawpolicy.children.Domain.children.Group.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allgroups += $rawglobalpolicy.children.Domain.children.Group.Where({$_.id})
+	}
+
+	# Creating a hashset for groups to be used during rule creation for html
 
 
-	Write-Host "Gathering Serivces..."
 
-	$allservices = $rawservices.children.Service | Where-object {$_.id}
+	Write-Host "Groups identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
+	Write-Host "Identifying Serivces..."
+	$stopwatch.Restart()
+
+	$allservices = $rawservices.children.Service.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allservices += $rawglobalservices.children.Service.Where({$_.id})
+	}
+	Write-Host "Services identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 
 	# Gathering Context Profiles
 
-	Write-Host "Gathering Context Profiles..."
+	Write-Host "Identifying Context Profiles..."
+	$stopwatch.Restart()
 
-	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
+	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile.Where({$_.id})
+	if ($localManagedByGlobal -match "^[yY]$") {
+		$allcontextprofiles += $rawglobalpolicy.children.PolicyContextProfile.Where({$_.id})
+	}
+
+	Write-Host "Context Profiles identified in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+
 
 	return [pscustomobject]@{
-        SecPolicies =        $secpolicies
+        SecPolicies =        $sortedSecPolicies
 		AllGroups   =        $allgroups
 		AllServices =        $allservices
 		AllContextProfiles = $allcontextprofiles
@@ -91,7 +151,6 @@ function Get-StartDate {
 				# Return the results
 
 				$dates = @($dateInput,$epochMilliseconds)
-				#return $epochMilliseconds
 				return $dates
 			}
 			catch {
@@ -102,7 +161,6 @@ function Get-StartDate {
 
 			$dates = @($dateInput,$epochMilliseconds)
 			return $dates
-			#return $epochMilliseconds
 			Write-Host "No date entered; all Policies will be gathered"
 
 		} else {
@@ -112,7 +170,9 @@ function Get-StartDate {
 }
 function Invoke-GenerateBreakdownReport {
 	
-	
+
+	Write-Host "Generating Report Summaries..."
+	$stopwatch.Restart()
 	#Gathering Category and Rule counts
 
 	# Initialize counts
@@ -137,23 +197,16 @@ function Invoke-GenerateBreakdownReport {
 	}
 
 	# Filter and process security policies
-	foreach ($secpolicy in $allsecpolicies | Where-Object {
-		$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time
-	}) {
-		$policy_count++
+	$policy_count = $allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
+	$rule_count = ($allsecpolicies.children.Rule).Count
+	
+	#Breaking down Polices by category and then calulating unique category rules
+	$allsecpolicies.Where({
+		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
+				$categoryCounts[$_.category]++
+				$ruleCounts[$_.category] += ($_.children.Rule).Count
+		})
 
-		# If category exists in the hashtable, increment the category count
-		if ($categoryCounts.ContainsKey($secpolicy.category)) {
-			$categoryCounts[$secpolicy.category]++
-			foreach ($rule in $secpolicy.children.Rule) {
-				$ruleCounts[$secpolicy.category]++
-				$rule_count++
-			}
-		} else {
-			# Handle unexpected categories (optional)
-			Write-Warning "Unexpected category found: $($secpolicy.category)"
-		}
-	}
 
 	$eth_category = $($categoryCounts["Ethernet"])
 	$emer_category = $($categoryCounts["Emergency"])
@@ -167,35 +220,34 @@ function Invoke-GenerateBreakdownReport {
 	$app_rule_count = $($ruleCounts["Application"])
 
 	#Gathering service counts
-	$svc_count = 0
-	foreach ($svc in $allsecservices | Where-Object {$_.is_default -eq $False -And $startDate[1] -le $_._create_time}){
-		$svc_count++
-	}
+	$svc_count = $allsecservices.Where({-not $_.is_default -And $startDate[1] -le $_._create_time}).Count
 
 	#Gathering context profile counts
-	$cxt_pro_count = 0
-	foreach ($cxt_pro in $allseccontextprofiles | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
-		$cxt_pro_count++
-	}
+	$cxt_pro_count = $allseccontextprofiles.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
 
 	#Gathering group counts
-	$group_count = 0
-	foreach ($grp in $allsecgroups | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}){
-		$group_count++
-	}
+	$group_count = $allsecgroups.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
 
 	$report_counts = @($policy_count,$rule_count,$svc_count,$cxt_pro_count,$group_count,$infra_category,$env_category,$app_category,$infra_rule_count,$env_rule_count,$app_rule_count,$eth_category,$emer_category,$eth_rule_count,$emer_rule_count)
 
-
+	Write-Host "Report Summaries generated in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 	return $report_counts
 }
 
 function Invoke-GeneratePolicyReport {
 
-	
+	Write-Host "Begin processing of Security Policies..."
+	$stopwatch.Restart()
+
 	# Loop through the data to create rows with conditional formatting
-	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False -And $startDate[1] -le $_._create_time}) {
+	$allsecpolicies.Where({
+		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
 		
+		$outerPolicy = $_		
+	
+		Write-Host "Processing Security Policy: $($_.display_name)"
+		#$stopwatch.Restart()
+
 		# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
 		
 		$categoryColors = @{
@@ -207,73 +259,92 @@ function Invoke-GeneratePolicyReport {
 		}
 		
 		$rowStyle = ""
-		if ($categoryColors.ContainsKey($secpolicy.category)) {
-			$rowStyle = " style=`"background-color: $($categoryColors[$secpolicy.category]); `""
+		if ($categoryColors.ContainsKey($_.category)) {
+			$rowStyle = " style=`"background-color: $($categoryColors[$_.category]); `""
 		}
 		
 		
 			#logic to add applied to notation to applicable policy
 			$policy_Applied_To = $null
 
-			if ($secpolicy.scope -ne "ANY"){
+			if ($_.scope -ne "ANY"){
 				$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
 			}
 		
 			# Add the row to the HTML
 			$html_policy += "    <tr$rowStyle>
-				<td style='font-weight: bold;'>$($secpolicy.category)</td>
-				<td>$($secpolicy.display_name)</td>
+				<td style='font-weight: bold;'>$($_.category)</td>
+				<td>$($_.display_name)</td>
 				<td colspan=7>$($policy_Applied_To)</td>
 			</tr>`n"
 
 			
 		
-		# Gathering all rules and polices
+		# Gathering all rules in the policy
 
 			
-			$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
-
+			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number		
+	
 			
-		
+			
+			
 			$rowCount = 0
-			foreach ($rule in $sortrules | Where-object {$_.id}){
+			$sortrules.Where({$_.id }).ForEach({
 				
-				$ruleentryname = $rule.display_name
-				$ruleentryaction = $rule.action
+				$rule = $_
+				$ruleentryname = $_.display_name
+				$ruleentryaction = $_.action
 				#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
 				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
 				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
-				$ruleentrysrc = (($allsecgroups | Where-Object {$_.path -in $rule.source_groups}).display_name -join "`n")
-				if ($rule.sources_excluded -eq "true"){
+				#$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
+
+				$rulesrcmatches = $rule.source_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+				$ruleentrysrc = $rulesrcmatches -join "`n"
+
+				if ($_.sources_excluded -eq "true"){
 					$ruleentrysrc = "<s>$ruleentrysrc</s>"
 				}
 				if (-not $ruleentrysrc) {
 					$ruleentrysrc = "Any"
 				}
 
-				$ruleentrydst = (($allsecgroups | Where-Object {$_.path -in $rule.destination_groups}).display_name -join "`n")
-				if ($rule.destinations_excluded -eq "true"){
+				#$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
+				
+				$ruledstmatches = $rule.destination_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+				$ruleentrydst = $ruledstmatches -join "`n"
+				
+				if ($_.destinations_excluded -eq "true"){
 					$ruleentrydst = "<s>$ruleentrydst</s>"
 				}
 				if (-not $ruleentrydst) {
 					$ruleentrydst = "Any"
 				}
 
-				$ruleentrysvc = (($allsecservices | Where-Object {$_.path -in $rule.services}).display_name -join "`n")
+				#$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
+				$rulesvcmatches = $rule.services | Where-Object { $allsecservicesLookup.ContainsKey($_) } | ForEach-Object { $allsecservicesLookup[$_] }
+				$ruleentrysvc = $rulesvcmatches -join "`n"
 				if (-not $ruleentrysvc) {
 					$ruleentrysvc = "Any"
 				}
 
-				$ruleentrycxtpro = (($allseccontextprofiles | Where-Object {$_.path -in $rule.profiles}).display_name -join "`n")
+				#$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
+				$rulecxtpromatches = $rule.profiles | Where-Object { $allseccontextprofilesLookup.ContainsKey($_) } | ForEach-Object { $allseccontextprofilesLookup[$_] }
+				$ruleentrycxtpro = $rulecxtpromatches -join "`n"
 				if (-not $ruleentrycxtpro) {
 					$ruleentrycxtpro = ""
 				}
 
 				
-				if ($secpolicy.scope -ne "ANY"){
-					$ruleentryappliedto = ((($allsecgroups | Where-Object {$_.path -in $secpolicy.scope}).display_name | Foreach-Object { "$_*" }) -join "`n")
+				if ($outerPolicy.scope -ne "ANY"){
+					$ruleentryappliedtomatches = $outerPolicy.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					#$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
+					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
 				} else {
-					$ruleentryappliedto = (($allsecgroups | Where-Object {$_.path -in $rule.scope}).display_name -join "`n")
+					#$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
+					$ruleentryappliedtomatches = $rule.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
+
 					if (-not $ruleentryappliedto) {
 						$ruleentryappliedto = "DFW"
 					}
@@ -302,8 +373,8 @@ function Invoke-GeneratePolicyReport {
 				}
 				
 				$nullStyle = ""
-				if ($categoryNullStyles.ContainsKey($secpolicy.category)) {
-					$nullStyle = $categoryNullStyles[$secpolicy.category]
+				if ($categoryNullStyles.ContainsKey($outerPolicy.category)) {
+					$nullStyle = $categoryNullStyles[$outerPolicy.category]
 				}
 				
 		
@@ -321,13 +392,14 @@ function Invoke-GeneratePolicyReport {
 				</tr>`n"
 				
 				
-			}  
-		}
+			})  
+			#Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+		})
 
 		
 
 
-	
+		Write-Host "Completed Security Policies processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
 		return $html_policy
 }
 
@@ -1197,34 +1269,43 @@ $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX User
 
 # Uri will get only securitypolices, groups, and context profiles under infra
 # SvcUri will get only services under infra
+# GlobalUri and GlobalSvcUri are only used when an LM has been identified as owned by a GM. This is for cases
+# where local security policies/rules may be utilizing GM owned groups, services, and context profiles. 
 
 $localOrGlobal = ""
+$localManagedByGlobal = ""
 
-while (-not $localOrGlobal -or $localOrGlobal -eq "") {
+# Prompt user to determine if the NSX Manager is Global
+do {
     $localOrGlobal = Read-Host "Is the NSX Manager a Global NSX Manager? <Y/N>"
-    
-    if ($localOrGlobal -match "^[yYnN]$") {  # Accepts Y, y, N, n only
-        if ($localOrGlobal -match "^[yY]$") {
-			Write-Host ""
-            Write-Host "$nsxmgr will be queried as a Global NSX Manager."
-			Write-Host ""
-			$Uri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-			$SvcUri = 'https://'+$nsxmgr+'/global-manager/api/v1/global-infra?type_filter=Service;'
+} until ($localOrGlobal -match "^[yYnN]$")  # Ensures only Y/y/N/n is accepted
 
-        } else {
-			Write-Host ""
-            Write-Host "$nsxmgr will be queried as a Local NSX Manager."
-			Write-Host ""
-			$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;'
-			$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service;'
+if ($localOrGlobal -match "^[yY]$") {
+    Write-Host "`n$nsxmgr will be queried as a Global NSX Manager.`n"
+    $Uri = "https://$nsxmgr/global-manager/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+    $SvcUri = "https://$nsxmgr/global-manager/api/v1/global-infra?type_filter=Service;"
+} else {
+    # If Local, check if it is managed by a Global NSX Manager
+    do {
+        $localManagedByGlobal = Read-Host "Is the Local NSX Manager managed by a Global NSX Manager? <Y/N>"
+    } until ($localManagedByGlobal -match "^[yYnN]$")  # Ensures only Y/y/N/n is accepted
 
-        }
-		continue
+    if ($localManagedByGlobal -match "^[yY]$") {
+        Write-Host "`nGathering Local and Global objects from $nsxmgr.`n"
+        $Uri = "https://$nsxmgr/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $SvcUri = "https://$nsxmgr/policy/api/v1/infra?type_filter=Service;"
+        $globalUri = "https://$nsxmgr/policy/api/v1/global-infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $globalSvcUri = "https://$nsxmgr/policy/api/v1/global-infra?type_filter=Service;"
+
+
+
     } else {
-        Write-Host "Invalid input, please enter Y or N."
-        $localOrGlobal = ""  # Reset value to continue loop
+        Write-Host "`n$nsxmgr will be queried as a Local NSX Manager.`n"
+        $Uri = "https://$nsxmgr/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;"
+        $SvcUri = "https://$nsxmgr/policy/api/v1/infra?type_filter=Service;"
     }
 }
+
 
 
 #Verify NSX credentials work before trying to fully gather data
@@ -1243,9 +1324,27 @@ $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
+#Dictionary creations
+#creating a dictionary lookup of allsecgroups.path to test speed difference for rule evaluations
+
+$allsecgroupsLookup = @{}
+$allsecgroups | ForEach-Object { $allsecgroupsLookup[$_.path] = $_.display_name }
+
+#creating a dictionary lookup of allsecservices.path to test speed difference for rule evaluations
+
+$allsecservicesLookup = @{}
+$allsecservices | ForEach-Object { $allsecservicesLookup[$_.path] = $_.display_name }
+
+#creating a dictionary lookup of allseccontextprofiles.path to test speed difference for rule evaluations
+
+$allseccontextprofilesLookup = @{}
+$allseccontextprofiles | ForEach-Object { $allseccontextprofilesLookup[$_.path] = $_.display_name }
+
+
+
+
 
 #$header contains the formatting data for the the html file that will be created
-
 $header = @"
 <style>
 table {
@@ -1301,7 +1400,7 @@ max-width: 300px;
 </style>
 "@
 
-#initializing $html_policy variable (although i should not need it) and then assiging it with the output of Invoke-GeneratePolicyReport
+#initializing $html_policy variable (although i should not need to do so) and then assiging it with the output of Invoke-GeneratePolicyReport
 $html_policy = " "
 $html_policy = Invoke-GeneratePolicyReport
 #gathering the report count data
@@ -1310,7 +1409,6 @@ $report_counts = Invoke-GenerateBreakdownReport
 
 #final function create the actual html output file utilizing the data gathered in prior steps
 Invoke-OutputReport
-
 
 $scriptTimer.Stop()
 
