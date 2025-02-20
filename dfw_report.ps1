@@ -241,7 +241,7 @@ function Invoke-GeneratePolicyReport {
 
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
-		$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).ForEach({
+		($_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time) -Or (($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
 		
 		$outerPolicy = $_		
 	
@@ -289,7 +289,7 @@ function Invoke-GeneratePolicyReport {
 			
 			
 			$rowCount = 0
-			$sortrules.Where({$_.id }).ForEach({
+			$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
 				
 				$rule = $_
 				$ruleentryname = $_.display_name
