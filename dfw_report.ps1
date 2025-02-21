@@ -242,7 +242,8 @@ function Invoke-GeneratePolicyReport {
 	# Loop through the data to create rows with conditional formatting
 	$allsecpolicies.Where({
 		($_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time) -Or (($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
-		
+		#($_._create_user -ne 'system' -And -not $_._system_owned -And ($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
+
 		$outerPolicy = $_		
 	
 		Write-Host "Processing Security Policy: $($_.display_name)"
