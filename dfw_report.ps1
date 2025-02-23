@@ -198,7 +198,7 @@ function Invoke-GenerateBreakdownReport {
 
 	# Filter and process security policies
 	$policy_count = $allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
-	$rule_count = ($allsecpolicies.children.Rule).Count
+	$rule_count = ($allsecpolicies.children.Rule).Where({$_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time}).Count
 	
 	#Breaking down Polices by category and then calulating unique category rules
 	$allsecpolicies.Where({
@@ -362,7 +362,8 @@ function Invoke-GeneratePolicyReport {
 					if ($outerPolicy.scope -ne "ANY"){
 						$ruleentryappliedtomatches = $outerPolicy.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
 						#$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
-						$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
+						$ruleentryappliedto = ($ruleentryappliedtomatches.ForEach({ "$_*" })) -join "`n"
+						#$ruleentryappliedto = $ruleentryappliedtomatches -join "*`n"
 					} else {
 						#$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
 						$ruleentryappliedtomatches = $rule.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
@@ -401,7 +402,6 @@ function Invoke-GeneratePolicyReport {
 					}
 					
 			
-				#<td style='background-color: #6BAC82; border-bottom: none; border-top: none;' colspan=2></td>
 
 					$html_policy += "    <tr$rowStyle2>
 					<td$nullStyle>
