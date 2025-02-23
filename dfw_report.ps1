@@ -240,161 +240,171 @@ function Invoke-GeneratePolicyReport {
 	$stopwatch.Restart()
 
 	# Loop through the data to create rows with conditional formatting
-	$allsecpolicies.Where({
-		($_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time) -Or (($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
-		#($_._create_user -ne 'system' -And -not $_._system_owned -And ($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
-
-		$outerPolicy = $_		
-	
-		Write-Host "Processing Security Policy: $($_.display_name)"
-		#$stopwatch.Restart()
-
-		# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
-		
-		$categoryColors = @{
-			"Infrastructure" = "#2F8A4C"
-			"Environment"    = "#4682B4"
-			"Application"    = "#995CD5"
-			"Ethernet"       = "#6F869E"
-			"Emergency"      = "#C74C4C"
+	#$allsecpolicies.Where({
+		#($_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time) -Or (($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
+	$allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned}).ForEach({
+		$matchOnMain = ($startDate[1] -le $_._create_time)
+		if (-not $matchOnMain) {
+			$matchOnChildren = $_.children.Rule._create_time.Where({ $startDate[1] -le $_ }, 'First').Count -gt 0
 		}
-		
-		$rowStyle = ""
-		if ($categoryColors.ContainsKey($_.category)) {
-			$rowStyle = " style=`"background-color: $($categoryColors[$_.category]); `""
-		}
-		
-		
-			#logic to add applied to notation to applicable policy
-			$policy_Applied_To = $null
 
-			if ($_.scope -ne "ANY"){
-				$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
+		Write-Host "main match" $matchOnMain
+		Write-Host "rule" $matchOnChildren
+
+		if ($matchOnMain -or $matchOnChildren) {
+
+			$outerPolicy = $_		
+		
+			Write-Host "Processing Security Policy: $($_.display_name)"
+			#$stopwatch.Restart()
+
+			# Ensure that lines that contain the category and policy are a unique color compared to the rows that have rules
+			
+			$categoryColors = @{
+				"Infrastructure" = "#2F8A4C"
+				"Environment"    = "#4682B4"
+				"Application"    = "#995CD5"
+				"Ethernet"       = "#6F869E"
+				"Emergency"      = "#C74C4C"
 			}
-		
-			# Add the row to the HTML
-			$html_policy += "    <tr$rowStyle>
-				<td style='font-weight: bold;'>$($_.category)</td>
-				<td>$($_.display_name)</td>
-				<td colspan=7>$($policy_Applied_To)</td>
-			</tr>`n"
-
 			
-		
-		# Gathering all rules in the policy
-
-			
-			$sortrules = $_.children.Rule | Sort-Object -Property sequence_number		
-	
+			$rowStyle = ""
+			if ($categoryColors.ContainsKey($_.category)) {
+				$rowStyle = " style=`"background-color: $($categoryColors[$_.category]); `""
+			}
 			
 			
+				#logic to add applied to notation to applicable policy
+				$policy_Applied_To = $null
+
+				if ($_.scope -ne "ANY"){
+					$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
+				}
 			
-			$rowCount = 0
-			$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
-				
-				$rule = $_
-				$ruleentryname = $_.display_name
-				$ruleentryaction = $_.action
-				#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
-				#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
-				#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
-				#$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
-
-				$rulesrcmatches = $rule.source_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
-				$ruleentrysrc = $rulesrcmatches -join "`n"
-
-				if ($_.sources_excluded -eq "true"){
-					$ruleentrysrc = "<s>$ruleentrysrc</s>"
-				}
-				if (-not $ruleentrysrc) {
-					$ruleentrysrc = "Any"
-				}
-
-				#$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
-				
-				$ruledstmatches = $rule.destination_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
-				$ruleentrydst = $ruledstmatches -join "`n"
-				
-				if ($_.destinations_excluded -eq "true"){
-					$ruleentrydst = "<s>$ruleentrydst</s>"
-				}
-				if (-not $ruleentrydst) {
-					$ruleentrydst = "Any"
-				}
-
-				#$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
-				$rulesvcmatches = $rule.services | Where-Object { $allsecservicesLookup.ContainsKey($_) } | ForEach-Object { $allsecservicesLookup[$_] }
-				$ruleentrysvc = $rulesvcmatches -join "`n"
-				if (-not $ruleentrysvc) {
-					$ruleentrysvc = "Any"
-				}
-
-				#$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
-				$rulecxtpromatches = $rule.profiles | Where-Object { $allseccontextprofilesLookup.ContainsKey($_) } | ForEach-Object { $allseccontextprofilesLookup[$_] }
-				$ruleentrycxtpro = $rulecxtpromatches -join "`n"
-				if (-not $ruleentrycxtpro) {
-					$ruleentrycxtpro = ""
-				}
-
-				
-				if ($outerPolicy.scope -ne "ANY"){
-					$ruleentryappliedtomatches = $outerPolicy.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
-					#$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
-					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
-				} else {
-					#$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
-					$ruleentryappliedtomatches = $rule.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
-					$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
-
-					if (-not $ruleentryappliedto) {
-						$ruleentryappliedto = "DFW"
-					}
-				}
-
-				
-					
-				$rowCount++
-							
 				# Add the row to the HTML
-				if ($rowCount % 2) {
-					$rowStyle2 = ' style="background-color: #C4C4C4;"'
-				} else { 
-					$rowStyle2 = ' style="background-color: #AEB6BC;"'
-				}
-
-				# Adding logic to alter the colors of the first two columns depending on the policy category
-
-		
-				$categoryNullStyles = @{
-					"Infrastructure" = ' style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td'
-					"Environment"    = ' style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td'
-					"Application"    = ' style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td'
-					"Ethernet"       = ' style="background-color: #98AFC4; border-bottom: none; border-top: none;" colspan=2></td'
-					"Emergency"      = ' style="background-color: #E07A7A; border-bottom: none; border-top: none;" colspan=2></td'
-				}
-				
-				$nullStyle = ""
-				if ($categoryNullStyles.ContainsKey($outerPolicy.category)) {
-					$nullStyle = $categoryNullStyles[$outerPolicy.category]
-				}
-				
-		
-			#<td style='background-color: #6BAC82; border-bottom: none; border-top: none;' colspan=2></td>
-
-				$html_policy += "    <tr$rowStyle2>
-				<td$nullStyle>
-				<td style='vertical-align: middle;'>$($ruleentryname)</td>
-				<td style='vertical-align: middle;'>$($ruleentrysrc)</td>
-				<td style='vertical-align: middle;'>$($ruleentrydst)</td>
-				<td style='vertical-align: middle;'>$($ruleentrysvc)</td>
-				<td style='vertical-align: middle;'>$($ruleentrycxtpro)</td>
-				<td style='vertical-align: middle;'>$($ruleentryappliedto)</td>
-				<td style='vertical-align: middle;'>$($ruleentryaction)</td>
+				$html_policy += "    <tr$rowStyle>
+					<td style='font-weight: bold;'>$($_.category)</td>
+					<td>$($_.display_name)</td>
+					<td colspan=7>$($policy_Applied_To)</td>
 				</tr>`n"
+
+				
+			
+			# Gathering all rules in the policy
+
+				
+				$sortrules = $_.children.Rule | Sort-Object -Property sequence_number		
+		
 				
 				
-			})  
+				
+				$rowCount = 0
+				$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
+					
+					$rule = $_
+					$ruleentryname = $_.display_name
+					$ruleentryaction = $_.action
+					#Each of the next five actions are taking the data from a field in the rule and then comparing it to security groups, services, or context
+					#profiles to get the more human readable "display name". The "if" statements are there if and when the rule has an 'ANY', which won't 
+					#match the existing query. Context Profiles are deliberately blank in this situation for readability. 
+					#$ruleentrysrc = (($allsecgroups.Where({$_.path -in $rule.source_groups}).display_name -join "`n"))
+
+					$rulesrcmatches = $rule.source_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					$ruleentrysrc = $rulesrcmatches -join "`n"
+
+					if ($_.sources_excluded -eq "true"){
+						$ruleentrysrc = "<s>$ruleentrysrc</s>"
+					}
+					if (-not $ruleentrysrc) {
+						$ruleentrysrc = "Any"
+					}
+
+					#$ruleentrydst = (($allsecgroups.Where({$_.path -in $rule.destination_groups}).display_name -join "`n"))
+					
+					$ruledstmatches = $rule.destination_groups | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+					$ruleentrydst = $ruledstmatches -join "`n"
+					
+					if ($_.destinations_excluded -eq "true"){
+						$ruleentrydst = "<s>$ruleentrydst</s>"
+					}
+					if (-not $ruleentrydst) {
+						$ruleentrydst = "Any"
+					}
+
+					#$ruleentrysvc = (($allsecservices.Where({$_.path -in $rule.services}).display_name -join "`n"))
+					$rulesvcmatches = $rule.services | Where-Object { $allsecservicesLookup.ContainsKey($_) } | ForEach-Object { $allsecservicesLookup[$_] }
+					$ruleentrysvc = $rulesvcmatches -join "`n"
+					if (-not $ruleentrysvc) {
+						$ruleentrysvc = "Any"
+					}
+
+					#$ruleentrycxtpro = (($allseccontextprofiles.Where({$_.path -in $rule.profiles}).display_name -join "`n"))
+					$rulecxtpromatches = $rule.profiles | Where-Object { $allseccontextprofilesLookup.ContainsKey($_) } | ForEach-Object { $allseccontextprofilesLookup[$_] }
+					$ruleentrycxtpro = $rulecxtpromatches -join "`n"
+					if (-not $ruleentrycxtpro) {
+						$ruleentrycxtpro = ""
+					}
+
+					
+					if ($outerPolicy.scope -ne "ANY"){
+						$ruleentryappliedtomatches = $outerPolicy.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+						#$ruleentryappliedto = $allsecgroups.Where({$_.path -in $outerPolicy.scope}).Foreach({ "$($_.display_name)*" }) -join "`n"
+						$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
+					} else {
+						#$ruleentryappliedto = ($allsecgroups.Where({$_.path -in $rule.scope}).display_name) -join "`n"
+						$ruleentryappliedtomatches = $rule.scope | Where-Object { $allsecgroupsLookup.ContainsKey($_) } | ForEach-Object { $allsecgroupsLookup[$_] }
+						$ruleentryappliedto = $ruleentryappliedtomatches -join "`n"
+
+						if (-not $ruleentryappliedto) {
+							$ruleentryappliedto = "DFW"
+						}
+					}
+
+					
+						
+					$rowCount++
+								
+					# Add the row to the HTML
+					if ($rowCount % 2) {
+						$rowStyle2 = ' style="background-color: #C4C4C4;"'
+					} else { 
+						$rowStyle2 = ' style="background-color: #AEB6BC;"'
+					}
+
+					# Adding logic to alter the colors of the first two columns depending on the policy category
+
+			
+					$categoryNullStyles = @{
+						"Infrastructure" = ' style="background-color: #6BAC82; border-bottom: none; border-top: none;" colspan=2></td'
+						"Environment"    = ' style="background-color: #6FA3D1; border-bottom: none; border-top: none;" colspan=2></td'
+						"Application"    = ' style="background-color: #DBACFC; border-bottom: none; border-top: none;" colspan=2></td'
+						"Ethernet"       = ' style="background-color: #98AFC4; border-bottom: none; border-top: none;" colspan=2></td'
+						"Emergency"      = ' style="background-color: #E07A7A; border-bottom: none; border-top: none;" colspan=2></td'
+					}
+					
+					$nullStyle = ""
+					if ($categoryNullStyles.ContainsKey($outerPolicy.category)) {
+						$nullStyle = $categoryNullStyles[$outerPolicy.category]
+					}
+					
+			
+				#<td style='background-color: #6BAC82; border-bottom: none; border-top: none;' colspan=2></td>
+
+					$html_policy += "    <tr$rowStyle2>
+					<td$nullStyle>
+					<td style='vertical-align: middle;'>$($ruleentryname)</td>
+					<td style='vertical-align: middle;'>$($ruleentrysrc)</td>
+					<td style='vertical-align: middle;'>$($ruleentrydst)</td>
+					<td style='vertical-align: middle;'>$($ruleentrysvc)</td>
+					<td style='vertical-align: middle;'>$($ruleentrycxtpro)</td>
+					<td style='vertical-align: middle;'>$($ruleentryappliedto)</td>
+					<td style='vertical-align: middle;'>$($ruleentryaction)</td>
+					</tr>`n"
+					
+					
+				})  
 			#Write-Host "Security Policy: $($_.display_name) completed processing in $($stopwatch.Elapsed) (HH:MM:SS:MS)"
+		}
 		})
 
 		
