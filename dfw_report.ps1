@@ -243,6 +243,9 @@ function Invoke-GeneratePolicyReport {
 	#$allsecpolicies.Where({
 		#($_._create_user -ne 'system' -And -not $_._system_owned -And $startDate[1] -le $_._create_time) -Or (($_.children.Rule._create_time | Where-Object { $startDate[1] -le $_ }).Count -gt 0)}).ForEach({
 	$allsecpolicies.Where({$_._create_user -ne 'system' -And -not $_._system_owned}).ForEach({
+		$matchOnMain = $null
+		$matchOnChildren = $null
+
 		$matchOnMain = ($startDate[1] -le $_._create_time)
 		if (-not $matchOnMain) {
 			$matchOnChildren = $_.children.Rule._create_time.Where({ $startDate[1] -le $_ }, 'First').Count -gt 0
@@ -274,19 +277,19 @@ function Invoke-GeneratePolicyReport {
 			}
 			
 			
-				#logic to add applied to notation to applicable policy
-				$policy_Applied_To = $null
+			#logic to add applied to notation to applicable policy
+			$policy_Applied_To = $null
 
-				if ($_.scope -ne "ANY"){
-					$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
-				}
-			
-				# Add the row to the HTML
-				$html_policy += "    <tr$rowStyle>
-					<td style='font-weight: bold;'>$($_.category)</td>
-					<td>$($_.display_name)</td>
-					<td colspan=7>$($policy_Applied_To)</td>
-				</tr>`n"
+			if ($_.scope -ne "ANY"){
+				$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
+			}
+		
+			# Add the row to the HTML
+			$html_policy += "    <tr$rowStyle>
+				<td style='font-weight: bold;'>$($_.category)</td>
+				<td>$($_.display_name)</td>
+				<td colspan=7>$($policy_Applied_To)</td>
+			</tr>`n"
 
 				
 			
@@ -299,7 +302,16 @@ function Invoke-GeneratePolicyReport {
 				
 				
 				$rowCount = 0
-				$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
+
+				$sortrulesToProcess = if ($matchOnMain) {
+					$sortrules  # Use all rules if main policy matches
+				}
+				elseif ($matchOnChildren) {
+					$sortrules.Where({ $_.id -And $startDate[1] -le $_._create_time })  # Filter if children match
+				}
+				
+				$sortrulesToProcess.ForEach({
+				#$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
 					
 					$rule = $_
 					$ruleentryname = $_.display_name
