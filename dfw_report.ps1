@@ -283,6 +283,8 @@ function Invoke-GeneratePolicyReport {
 			if ($_.scope -ne "ANY"){
 				$policy_Applied_To = "<i>* 'Applied To' is configured for this Security Policy, and all rules within this policy inherit these settings</i>"
 			}
+
+			#logic to 
 		
 			# Add the row to the HTML
 			$html_policy += "    <tr$rowStyle>
@@ -311,7 +313,6 @@ function Invoke-GeneratePolicyReport {
 				}
 				
 				$sortrulesToProcess.ForEach({
-				#$sortrules.Where({$_.id -And $startDate[1] -le $_._create_time}).ForEach({
 					
 					$rule = $_
 					$ruleentryname = $_.display_name
@@ -1032,6 +1033,11 @@ function Invoke-OutputReport {
 			<li><strong>Targeted Mode</strong> - Captures <em>only user-created policies and objects that were created after a specified date</em>, providing a focused view of recent security changes.</li>
 		</ul>
 
+		<p>
+			When using <strong>Targeted Mode</strong>, all rules from Security Policies created <u>on or after the target date</u> are collected. If new rules are added to an 
+			existing Security Policy that predates the target date, <u>only those rules created on or after the target date</u> will be included. 
+		</p>
+		
 		<p>The selected mode determines the scope of the data presented in this report.</p>
 
     	$dateLine
@@ -1157,7 +1163,7 @@ function Invoke-OutputReport {
     <p>
         This section presents a <strong>snapshot of the entire firewall policy</strong> as it was captured at the time of reporting. 
         It includes a comprehensive overview of all <strong>user-created security policies, firewall rules, and associated objects</strong>, 
-        providing insight into the current configuration and policy structure.
+        providing insight into the current configuration and policy structure. 
     </p>
     <p>
        If <strong>"Negate Selections"</strong> has been configured for sources or destinations in a firewall rule, the groups making up 
